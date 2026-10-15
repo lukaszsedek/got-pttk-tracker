@@ -91,14 +91,14 @@ export default function PlanPanel({ plan, segById, currentPoints, scored, goal, 
                           onToggle(p.segmentId, p.direction === "forward" ? "backward" : "forward");
                         }}
                         title="Zmień kierunek"
-                        className="px-1 text-zinc-500 hover:text-green-700"
+                        className="p-2 text-zinc-500 hover:text-green-700"
                       >
                         ⇄
                       </button>
                       <button
                         onClick={() => onRemove(p.segmentId, p.direction)}
                         title="Usuń z planu"
-                        className="px-1 text-zinc-400 hover:text-red-600"
+                        className="p-2 text-zinc-400 hover:text-red-600"
                       >
                         ✕
                       </button>

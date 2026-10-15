@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, TrailDot } from "@/components/ui";
+import { loadUi, saveUi } from "@/lib/ui-state";
 import type { SegmentRow } from "@/types/pttk";
 
 interface Props {
@@ -23,10 +24,17 @@ const norm = (s: string) =>
 
 export default function SegmentList({ segments, completedIds, plannedIds, selectedId, onSelect }: Props) {
   const [q, setQ] = useState("");
-  const [region, setRegion] = useState("");
-  const [onlyMapped, setOnlyMapped] = useState(true);
-  const [status, setStatus] = useState<"all" | "todo" | "done" | "planned">("all");
-  const [sort, setSort] = useState<"default" | "points" | "km">("default");
+  const [region, setRegion] = useState(() => loadUi().listRegion ?? "");
+  const [onlyMapped, setOnlyMapped] = useState(() => loadUi().listOnlyMapped ?? true);
+  const [status, setStatus] = useState<"all" | "todo" | "done" | "planned">(
+    () => (loadUi().listStatus as "all" | "todo" | "done" | "planned") ?? "all",
+  );
+  const [sort, setSort] = useState<"default" | "points" | "km">(
+    () => (loadUi().listSort as "default" | "points" | "km") ?? "default",
+  );
+  useEffect(() => {
+    saveUi({ listRegion: region, listOnlyMapped: onlyMapped, listStatus: status, listSort: sort });
+  }, [region, onlyMapped, status, sort]);
   const [limit, setLimit] = useState(PAGE);
 
   const regions = useMemo(() => {

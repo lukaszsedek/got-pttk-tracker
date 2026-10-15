@@ -223,7 +223,7 @@ th{background:#eee}.n{text-align:right}.stamp{width:110px}tfoot td{font-weight:7
                       <button
                         onClick={() => onUndo(p.segmentId, p.direction)}
                         title="Usuń wpis"
-                        className="text-zinc-400 hover:text-red-600"
+                        className="p-2 text-zinc-400 hover:text-red-600"
                       >
                         ✕
                       </button>

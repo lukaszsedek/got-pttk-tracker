@@ -13,7 +13,7 @@ interface Props {
   /** Rysuje przebieg aktywności na mapie. */
   onTrack?: (coords: [number, number][] | null) => void;
   /** Odcinki wykryte w bieżącym podglądzie (do podświetlenia na mapie). */
-  onPreview?: (segmentIds: string[]) => void;
+  onPreview?: (segmentIds: string[], partialIds?: string[]) => void;
   /** Bez własnej karty (osadzone w zewnętrznej). */
   embedded?: boolean;
   completedIds: ReadonlySet<string>;
@@ -65,7 +65,10 @@ export default function GpxImport({ segments, completedIds, onConfirm, onTrack, 
         diagnostics: results[0].diagnostics,
       };
       setSummary(result);
-      onPreview?.([...new Set(result.matches.map((m) => m.segmentId))]);
+      onPreview?.(
+        [...new Set(result.matches.filter((m) => !m.partial).map((m) => m.segmentId))],
+        [...new Set(result.matches.filter((m) => m.partial).map((m) => m.segmentId))],
+      );
     } catch (e) {
       setError((e as Error).message);
     }

@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Ręczny przełącznik motywu: klasa .dark na <html> (ustawiana skryptem w layout). */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -12,11 +15,9 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 body {
@@ -40,10 +41,8 @@ body {
 :root {
   color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-  }
+.dark {
+  color-scheme: dark;
 }
 select,
 input:not([type="checkbox"]):not([type="radio"]),
@@ -68,21 +67,19 @@ input:focus {
   outline: 2px solid #16a34a;
   outline-offset: 1px;
 }
-@media (prefers-color-scheme: dark) {
-  select,
-  input:not([type="checkbox"]):not([type="radio"]),
-  textarea {
-    color: #fafafa;
-    background-color: #27272a;
-    border-color: #52525b;
-  }
-  select option {
-    color: #fafafa;
-    background-color: #27272a;
-  }
-  input::placeholder {
-    color: #a1a1aa;
-  }
+.dark select,
+.dark input:not([type="checkbox"]):not([type="radio"]),
+.dark textarea {
+  color: #fafafa;
+  background-color: #27272a;
+  border-color: #52525b;
+}
+.dark select option {
+  color: #fafafa;
+  background-color: #27272a;
+}
+.dark input::placeholder {
+  color: #a1a1aa;
 }
 
 .got-hover .maplibregl-popup-content {

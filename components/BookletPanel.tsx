@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Card } from "@/components/ui";
 import { dirPoints, directionLabel, downloadText, formatDate, plural, toCsv } from "@/lib/booklet";
 import type { SegmentRow, UserTrailProgress } from "@/types/pttk";
@@ -12,9 +12,28 @@ interface Props {
   onGoalChange: (n: number) => void;
   onSelect: (segmentId: string) => void;
   onUndo: (segmentId: string, direction: "forward" | "backward") => void;
+  /** Wywoływane po przywróceniu kopii — odśwież dane. */
+  onRestored: () => void;
 }
 
-export default function BookletPanel({ progress, segById, goal, onGoalChange, onSelect, onUndo }: Props) {
+export default function BookletPanel({ progress, segById, goal, onGoalChange, onSelect, onUndo, onRestored }: Props) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [restoreMsg, setRestoreMsg] = useState<string | null>(null);
+  const restore = async (file: File) => {
+    try {
+      const res = await fetch("/api/backup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: await file.text(),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error);
+      setRestoreMsg(`Przywrócono: ${j.progressInserted} zaliczeń, ${j.planInserted} w planie (pominięto ${j.skipped}).`);
+      onRestored();
+    } catch (e) {
+      setRestoreMsg(`Błąd: ${(e as Error).message}`);
+    }
+  };
   const rows = useMemo(
     () =>
       progress
@@ -89,6 +108,33 @@ export default function BookletPanel({ progress, segById, goal, onGoalChange, on
         >
           Eksportuj do CSV (do przepisania do książeczki)
         </button>
+        <div className="mt-2 flex gap-2">
+          <a
+            href="/api/backup"
+            download
+            className="flex-1 rounded-xl border border-zinc-300 py-2 text-center text-sm font-medium dark:border-zinc-700"
+          >
+            Pobierz kopię (JSON)
+          </a>
+          <button
+            onClick={() => fileRef.current?.click()}
+            className="flex-1 rounded-xl border border-zinc-300 py-2 text-sm font-medium dark:border-zinc-700"
+          >
+            Przywróć kopię…
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="application/json,.json"
+            hidden
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void restore(f);
+              e.target.value = "";
+            }}
+          />
+        </div>
+        {restoreMsg && <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">{restoreMsg}</p>}
       </Card>
 
       {byRegion.length > 0 && (

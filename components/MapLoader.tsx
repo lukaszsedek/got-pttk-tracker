@@ -64,7 +64,7 @@ export default function MapLoader() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     Promise.all([
       api<{ segments: SegmentRow[] }>("/api/segments"),
       api<{ progress: UserTrailProgress[] }>("/api/progress"),
@@ -77,6 +77,10 @@ export default function MapLoader() {
       })
       .catch((e: Error) => setError(e.message));
   }, []);
+
+  useEffect(() => {
+    reload();
+  }, [reload]);
 
   const fail = (e: unknown) => setNotice((e as Error).message);
 
@@ -356,6 +360,7 @@ export default function MapLoader() {
                 onGoalChange={changeGoal}
                 onSelect={select}
                 onUndo={undo}
+                onRestored={reload}
               />
             )}
 

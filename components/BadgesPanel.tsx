@@ -5,6 +5,7 @@ import { Card } from "@/components/ui";
 import {
   BADGES,
   MAX_PER_DAY,
+  OTHER_BADGES,
   W_GORY,
   WYTRWALOSC_NORM,
   cycleStatus,
@@ -62,7 +63,7 @@ export default function BadgesPanel({ entries, earned, onSetGoal, onEarn, onUnea
         <p className="mt-2 text-sm">
           {st.last ? (
             <>
-              Ostatnia zdobyta: <strong>{st.last.icon} {st.last.name}</strong> ({st.lastYear})
+              Ostatnia zdobyta: <strong>{st.last.name}</strong> ({st.lastYear})
             </>
           ) : (
             "Nie zaznaczono jeszcze żadnej zdobytej odznaki."
@@ -128,12 +129,13 @@ export default function BadgesPanel({ entries, earned, onSetGoal, onEarn, onUnea
                   e ? "border-green-500 bg-green-50 dark:bg-green-950/30" : "border-zinc-200 dark:border-zinc-800"
                 }`}
               >
-                <div
-                  className="mx-auto grid h-12 w-12 place-items-center rounded-full text-2xl"
-                  style={{ background: e ? b.color : "#d4d4d8", filter: e ? undefined : "grayscale(1)" }}
-                >
-                  {b.icon}
-                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={b.image}
+                  alt={b.name}
+                  className="mx-auto h-20 w-auto object-contain"
+                  style={{ filter: e ? undefined : "grayscale(1) opacity(0.55)" }}
+                />
                 <div className="mt-1 text-sm font-semibold">{b.name}</div>
                 <div className="text-xs text-zinc-500">
                   {e ? `zdobyta ${e.earnedYear}` : `norma ${b.norm} pkt`}
@@ -156,6 +158,23 @@ export default function BadgesPanel({ entries, earned, onSetGoal, onEarn, onUnea
               </li>
             );
           })}
+        </ul>
+        <h3 className="mt-4 mb-2 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+          Wyższe stopnie (wymagają wycieczek wielodniowych)
+        </h3>
+        <ul className="grid grid-cols-4 gap-2">
+          {OTHER_BADGES.map((b) => (
+            <li key={b.id} className="text-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={b.image}
+                alt={b.name}
+                className="mx-auto h-14 w-auto object-contain"
+                style={{ filter: "grayscale(1) opacity(0.6)" }}
+              />
+              <div className="mt-1 text-[10px] leading-tight text-zinc-500">{b.name}</div>
+            </li>
+          ))}
         </ul>
         <ul className="mt-3 list-disc space-y-1 pl-4 text-xs text-zinc-600 dark:text-zinc-400">
           <li>Odznaki zdobywa się kolejno; w roku kalendarzowym można zweryfikować jeden stopień (wyjątek: popularna i mała brązowa).</li>

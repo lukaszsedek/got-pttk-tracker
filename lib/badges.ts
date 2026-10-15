@@ -13,21 +13,31 @@ export interface Badge {
   points: number;
   color: string;
   icon: string;
+  /** Oficjalny wizerunek odznaki (public/badges). */
+  image: string;
   /** Punkty zza granicy mogą pokryć najwyżej 50% normy (§7.2). */
   foreignCapped: boolean;
 }
 
 const MAIN: Omit<Badge, "points">[] = [
-  { id: "popularna", name: "Popularna", norm: 60, color: "#16a34a", icon: "🌱", foreignCapped: true },
-  { id: "mala-brazowa", name: "Mała brązowa", norm: 120, color: "#b45309", icon: "🥉", foreignCapped: true },
-  { id: "mala-srebrna", name: "Mała srebrna", norm: 360, color: "#71717a", icon: "🥈", foreignCapped: true },
-  { id: "mala-zlota", name: "Mała złota", norm: 720, color: "#ca8a04", icon: "🥇", foreignCapped: true },
+  { id: "popularna", name: "Popularna", norm: 60, color: "#16a34a", icon: "🌱", image: "/badges/got_pop.gif", foreignCapped: true },
+  { id: "mala-brazowa", name: "Mała brązowa", norm: 120, color: "#b45309", icon: "🥉", image: "/badges/got_mbr.gif", foreignCapped: true },
+  { id: "mala-srebrna", name: "Mała srebrna", norm: 360, color: "#71717a", icon: "🥈", image: "/badges/got_msr.gif", foreignCapped: true },
+  { id: "mala-zlota", name: "Mała złota", norm: 720, color: "#ca8a04", icon: "🥇", image: "/badges/got_mzl.gif", foreignCapped: true },
 ];
 
 export const BADGES: Badge[] = MAIN.reduce<Badge[]>((acc, b) => {
   const prev = acc[acc.length - 1]?.points ?? 0;
   return [...acc, { ...b, points: prev + b.norm }];
 }, []);
+
+/** Duże odznaki i „Za wytrwałość” — wymagają wycieczek wielodniowych, więc tylko do wyświetlenia. */
+export const OTHER_BADGES = [
+  { id: "duza-brazowa", name: "Duża brązowa", image: "/badges/got_dbr.gif" },
+  { id: "duza-srebrna", name: "Duża srebrna", image: "/badges/got_dsr.gif" },
+  { id: "duza-zlota", name: "Duża złota", image: "/badges/got_dzl.gif" },
+  { id: "za-wytrwalosc", name: "Za wytrwałość", image: "/badges/got_zw.gif" },
+];
 
 /** "W góry" (dzieci 5–10 lat) — osobna ścieżka, nie wlicza się do cyklu. */
 export const W_GORY = [

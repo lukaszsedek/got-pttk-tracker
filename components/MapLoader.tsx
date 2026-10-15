@@ -533,7 +533,19 @@ export default function MapLoader() {
             <span className="hidden sm:block">
               <Stat
                 label={cycle.ready ? "Do weryfikacji" : "Odznaka"}
-                value={cycle.ready && cycle.next ? `⏳ ${cycle.next.name}` : badge ? `${badge.icon} ${badge.name}` : "—"}
+                value={
+                  cycle.ready && cycle.next ? (
+                    `⏳ ${cycle.next.name}`
+                  ) : badge ? (
+                    <span className="inline-flex items-center gap-1">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={badge.image} alt="" className="h-5 w-auto" />
+                      {badge.name}
+                    </span>
+                  ) : (
+                    "—"
+                  )
+                }
               />
             </span>
             <span className="hidden lg:block">
@@ -749,7 +761,7 @@ export default function MapLoader() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="rounded-xl bg-zinc-100 px-2.5 py-1 dark:bg-zinc-800">
       <dt className="text-[9px] tracking-wide text-zinc-500 uppercase">{label}</dt>

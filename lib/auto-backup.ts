@@ -46,12 +46,12 @@ export function maybeBackup() {
   last = Date.now();
   void (async () => {
     try {
-      await mkdir(DIR, { recursive: true });
+      await mkdir(/* turbopackIgnore: true */ DIR, { recursive: true });
       const snap = await snapshot();
       const name = `got-kopia-${snap.exportedAt.slice(0, 16).replace(/[:T]/g, "-")}.json`;
-      await writeFile(join(DIR, name), JSON.stringify(snap));
-      const files = (await readdir(DIR)).filter((f) => f.startsWith("got-kopia-")).sort();
-      for (const f of files.slice(0, Math.max(0, files.length - KEEP))) await unlink(join(DIR, f));
+      await writeFile(join(/* turbopackIgnore: true */ DIR, name), JSON.stringify(snap));
+      const files = (await readdir(/* turbopackIgnore: true */ DIR)).filter((f) => f.startsWith("got-kopia-")).sort();
+      for (const f of files.slice(0, Math.max(0, files.length - KEEP))) await unlink(join(/* turbopackIgnore: true */ DIR, f));
     } catch (e) {
       last = 0;
       console.warn("Automatyczna kopia nie powiodła się:", (e as Error).message);

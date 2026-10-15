@@ -44,3 +44,4 @@ next-env.d.ts
 
 # lokalny cache zapytań Overpass
 .cache/
+.pgdata/

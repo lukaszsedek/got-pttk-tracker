@@ -99,3 +99,27 @@ test("braki: nieznana nazwa i brak połączenia", () => {
   assert.equal(results.find((r) => r.id === "np")!.status, "no-path");
   assert.equal(results.find((r) => r.id === "nf")!.status, "destination-not-found");
 });
+
+test("przycina niezaznakowane dojścia do szlaku", () => {
+  // A --(bez znaków)-- B --(niebieski)-- C --(bez znaków)-- D
+  const hw = [
+    way(1, [[0, 0], [0.005, 0]]),
+    way(2, [[0.005, 0], [0.01, 0], [0.015, 0]]),
+    way(3, [[0.015, 0], [0.02, 0]]),
+  ];
+  const graph = buildGraph(hw, [rel(10, "blue", [2], hw)]);
+  const places = toPlaces([
+    node(100, "Kuźnice", 0, 0, { place: "locality" }),
+    node(101, "Przełęcz", 0.02, 0, { natural: "saddle" }),
+  ]);
+  const { results } = buildRecordGeometries([rec({ id: "x", trailColors: ["Blue"] })], places, graph);
+  const r = results[0];
+  assert.equal(r.status, "ok");
+  assert.deepEqual(r.coordinates![0], [0.005, 0]);
+  assert.deepEqual(r.coordinates!.at(-1), [0.015, 0]);
+});
+
+test("alternatywne nazwy (name:pl) są używane do dopasowania", () => {
+  const places = toPlaces([node(1, "Štrbské pleso", 20.05, 49.12, { place: "locality", "name:pl": "Szczyrbskie Jezioro" })]);
+  assert.ok(places.some((p) => p.name === "Szczyrbskie Jezioro"));
+});

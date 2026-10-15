@@ -13,6 +13,8 @@ export interface MatchOptions extends CleanOptions {
   bufferM?: number;
   /** Minimalny odsetek długości odcinka, który ślad musi pokryć. */
   minCoverage?: number;
+  /** Dolna granica „dopasowań częściowych” do ręcznego potwierdzenia. */
+  partialCoverage?: number;
 }
 
 interface Traversal {
@@ -67,7 +69,7 @@ export function matchActivity(
   activity: GpxActivity,
   segments: PttkSegment[],
   completedIds: ReadonlySet<string>,
-  { bufferM = 25, minCoverage = 0.85, ...clean }: MatchOptions = {},
+  { bufferM = 25, minCoverage = 0.85, partialCoverage = 0.5, ...clean }: MatchOptions = {},
 ): MatchSummary {
   // Kolejność wg czasu, jeśli dostępny.
   let pts = activity.points;
@@ -94,7 +96,8 @@ export function matchActivity(
     const covered = samples.filter((s) => trackLine.project(s).dist <= bufferM).length;
     const coverage = covered / samples.length;
     coverages.push({ segmentId: seg.id, coverage: Math.round(coverage * 100) / 100 });
-    if (coverage < minCoverage) continue;
+    if (coverage < partialCoverage) continue;
+    const partial = coverage < minCoverage;
 
     // Kolejność punktów śladu w buforze → pozycje wzdłuż odcinka. Przerwa w buforze zamyka przebieg.
     const runs: number[][] = [];
@@ -128,11 +131,12 @@ export function matchActivity(
         coverage: Math.round(coverage * 100) / 100,
         gotPoints: direction === "forward" ? seg.gotPointsForward : seg.gotPointsBackward,
         alreadyCompleted: completedIds.has(seg.id),
+        ...(partial ? { partial: true } : {}),
       });
     }
   }
 
-  const fresh = matches.filter((m) => !m.alreadyCompleted);
+  const fresh = matches.filter((m) => !m.alreadyCompleted && !m.partial);
   return {
     activityId: activity.id,
     matches,

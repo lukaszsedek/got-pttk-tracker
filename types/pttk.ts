@@ -63,6 +63,8 @@ export interface SegmentMatch {
   coverage: number;
   gotPoints: number;
   alreadyCompleted: boolean;
+  /** Pokrycie poniżej progu (np. 50–85%) — wymaga ręcznego potwierdzenia. */
+  partial?: boolean;
 }
 
 /** Podsumowanie importu do zatwierdzenia przez użytkownika. */

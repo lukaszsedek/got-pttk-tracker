@@ -236,3 +236,13 @@ export function shortestPath(
   }
   return { vertices, lengthM, cost: dist.get(to)! };
 }
+
+/** Maski kolorów kolejnych krawędzi ścieżki (długość = vertices.length - 1). */
+export function pathEdgeColors(g: Graph, vertices: number[]): number[] {
+  const out: number[] = [];
+  for (let i = 1; i < vertices.length; i++) {
+    const e = g.adj[vertices[i - 1]].find((x) => x.to === vertices[i]);
+    out.push(e?.colors ?? 0);
+  }
+  return out;
+}

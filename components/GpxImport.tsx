@@ -22,10 +22,12 @@ export default function GpxImport({ segments, completedIds, onConfirm }: Props) 
   const [fileName, setFileName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [accepted, setAccepted] = useState<Set<string>>(new Set());
 
   async function handle(file: File | undefined) {
     setError(null);
     setSummary(null);
+    setAccepted(new Set());
     if (!file) return;
     setFileName(file.name);
     try {
@@ -37,7 +39,14 @@ export default function GpxImport({ segments, completedIds, onConfirm }: Props) 
   }
 
   const names = new Map(segments.map((s) => [s.id, s.name]));
-  const fresh = summary?.matches.filter((m) => !m.alreadyCompleted) ?? [];
+  const key = (m: { segmentId: string; direction: string }) => `${m.segmentId}|${m.direction}`;
+  const full = summary?.matches.filter((m) => !m.partial) ?? [];
+  const partials = summary?.matches.filter((m) => m.partial && !m.alreadyCompleted) ?? [];
+  const fresh = [
+    ...full.filter((m) => !m.alreadyCompleted),
+    ...partials.filter((m) => accepted.has(key(m))),
+  ];
+  const extraPoints = partials.filter((m) => accepted.has(key(m))).reduce((s, m) => s + m.gotPoints, 0);
 
   return (
     <Card title="Import GPX">
@@ -98,11 +107,12 @@ export default function GpxImport({ segments, completedIds, onConfirm }: Props) 
         <div className="mt-3 flex flex-col gap-3">
           <div className="rounded-lg bg-green-50 p-3 text-sm dark:bg-green-950/40">
             <p className="font-semibold text-green-800 dark:text-green-300">
-              {summary.newSegments} nowych odcinków · {summary.totalGotPoints} pkt GOT
+              {summary.newSegments + accepted.size} nowych odcinków ·{" "}
+              {summary.totalGotPoints + extraPoints} pkt GOT
             </p>
           </div>
           <ul className="flex flex-col gap-1.5 text-sm">
-            {summary.matches.map((m) => (
+            {full.map((m) => (
               <li
                 key={`${m.segmentId}-${m.direction}`}
                 className={`flex items-start justify-between gap-2 ${m.alreadyCompleted ? "opacity-50" : ""}`}
@@ -120,6 +130,40 @@ export default function GpxImport({ segments, completedIds, onConfirm }: Props) 
               </li>
             ))}
           </ul>
+          {partials.length > 0 && (
+            <div className="rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-950/40">
+              <p className="mb-2 font-medium text-amber-800 dark:text-amber-200">
+                Częściowe dopasowania — potwierdź, jeśli przeszedłeś cały odcinek
+              </p>
+              <ul className="flex flex-col gap-1.5">
+                {partials.map((m) => (
+                  <li key={key(m)}>
+                    <label className="flex cursor-pointer items-start gap-2">
+                      <input
+                        type="checkbox"
+                        className="mt-1"
+                        checked={accepted.has(key(m))}
+                        onChange={(e) =>
+                          setAccepted((prev) => {
+                            const next = new Set(prev);
+                            if (e.target.checked) next.add(key(m));
+                            else next.delete(key(m));
+                            return next;
+                          })
+                        }
+                      />
+                      <span>
+                        {names.get(m.segmentId)} — {DIR_LABEL[m.direction]}
+                        <span className="block text-xs text-zinc-500">
+                          pokrycie {Math.round(m.coverage * 100)}% · {m.gotPoints} pkt
+                        </span>
+                      </span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {fresh.length > 0 && (
             <button
               className="rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-green-700"

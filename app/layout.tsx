@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import RegisterSW from "@/components/RegisterSW";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,6 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  applicationName: "GOT Tracker",
   title: "GOT PTTK Tracker",
   description: "Mapa pokrycia szlaków GOT PTTK i import GPX",
 };
@@ -23,7 +25,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="pl"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">{children}
+        <RegisterSW />
+      </body>
     </html>
   );
 }

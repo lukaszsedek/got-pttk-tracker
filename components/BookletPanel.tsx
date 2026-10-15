@@ -73,6 +73,31 @@ export default function BookletPanel({ progress, segById, goal, onGoalChange, on
     downloadText("ksiazeczka-got.csv", toCsv([head, ...body, [], ["", "", "", "Razem", total, ""]]));
   };
 
+  const printBooklet = () => {
+    const esc = (v: string | number) => String(v).replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
+    const body = [...rows]
+      .sort((a, b) => a.p.completedAt.localeCompare(b.p.completedAt))
+      .map(
+        (r, i) =>
+          `<tr><td>${i + 1}</td><td>${esc(formatDate(r.p.completedAt))}</td><td>${esc(r.s.regionName || r.s.groupId)}</td><td>${esc(
+            directionLabel(r.s.name, r.p.direction),
+          )}</td><td class="n">${r.points}</td><td class="stamp"></td></tr>`,
+      )
+      .join("");
+    const w = window.open("", "_blank");
+    if (!w) return;
+    w.document.write(`<!doctype html><html lang="pl"><head><meta charset="utf-8"><title>Książeczka GOT</title>
+<style>body{font:12px system-ui,sans-serif;margin:24px;color:#111}h1{font-size:18px;margin:0 0 4px}
+table{border-collapse:collapse;width:100%;margin-top:12px}th,td{border:1px solid #888;padding:5px 7px;text-align:left}
+th{background:#eee}.n{text-align:right}.stamp{width:110px}tfoot td{font-weight:700}
+@media print{body{margin:10mm}}</style></head><body>
+<h1>Książeczka GOT PTTK</h1><div>Wygenerowano: ${new Date().toLocaleDateString("pl-PL")} · wpisów: ${rows.length}</div>
+<table><thead><tr><th>Lp.</th><th>Data</th><th>Region</th><th>Odcinek</th><th>Pkt</th><th>Pieczątka</th></tr></thead>
+<tbody>${body}</tbody><tfoot><tr><td colspan="4">Razem</td><td class="n">${total}</td><td></td></tr></tfoot></table>
+<script>window.onload=()=>window.print()</script></body></html>`);
+    w.document.close();
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <Card title="Książeczka GOT">
@@ -107,6 +132,13 @@ export default function BookletPanel({ progress, segById, goal, onGoalChange, on
           className="mt-3 w-full rounded-xl border border-zinc-300 py-2 text-sm font-medium disabled:opacity-40 dark:border-zinc-700"
         >
           Eksportuj do CSV (do przepisania do książeczki)
+        </button>
+        <button
+          onClick={printBooklet}
+          disabled={!rows.length}
+          className="mt-2 w-full rounded-xl border border-zinc-300 py-2 text-sm font-medium disabled:opacity-40 dark:border-zinc-700"
+        >
+          Drukuj / zapisz jako PDF
         </button>
         <div className="mt-2 flex gap-2">
           <a

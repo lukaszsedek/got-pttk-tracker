@@ -206,7 +206,16 @@ export default function Map({
       map.on("mouseleave", "seg-line", () => (map.getCanvas().style.cursor = ""));
 
       readyRef.current = true;
-      if (l.segments.length && !fittedRef.current) {
+      if (l.track && l.track.length > 1) {
+        // Ślad ustawiony, zanim mapa skończyła się ładować.
+        (map.getSource(TRACK) as maplibregl.GeoJSONSource).setData({
+          type: "Feature",
+          properties: {},
+          geometry: { type: "LineString", coordinates: l.track },
+        });
+        map.fitBounds(bounds(l.track), { padding: 60, duration: 0 });
+        fittedRef.current = true;
+      } else if (l.segments.length && !fittedRef.current) {
         fitAll(map, l.segments);
         fittedRef.current = true;
       }

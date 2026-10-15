@@ -54,3 +54,10 @@ Aplikacja: http://localhost:8080 (w Cloud Shell: *Web Preview* → port 8080).
 - Baza nie jest publikowana na zewnątrz — dostępna tylko w sieci Compose.
 
 Wdrożenie na Cloud Run: [docs/DEPLOY_GCP.md](docs/DEPLOY_GCP.md) (na później).
+
+## Uwaga: wersja maplibre-gl
+
+Projekt używa `maplibre-gl@4.7.1` (zapięte na stałe). Wersje 5.x/6.x ładują worker z osobnego pliku
+(`maplibre-gl-worker.mjs`), co po zbundlowaniu przez Next.js kończy się błędem „Worker failed to load":
+podkład mapy się wyświetla, ale dane GeoJSON (szlaki, ślad GPX) nie. Nie aktualizuj bez dodania
+`setWorkerUrl()` i przetestowania w przeglądarce.

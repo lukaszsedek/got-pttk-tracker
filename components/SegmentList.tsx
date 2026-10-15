@@ -70,7 +70,7 @@ export default function SegmentList({ segments, completedIds, plannedIds, select
             setLimit(PAGE);
           }}
           placeholder="Szukaj: np. Nosal, Kasprowy, Boczań…"
-          className="rounded-lg border border-zinc-300 bg-transparent px-3 py-1.5 text-sm dark:border-zinc-700"
+          className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700"
         />
         <select
           value={region}
@@ -78,7 +78,7 @@ export default function SegmentList({ segments, completedIds, plannedIds, select
             setRegion(e.target.value);
             setLimit(PAGE);
           }}
-          className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-sm dark:border-zinc-700"
+          className="rounded-lg border border-zinc-300 px-2 py-1.5 text-sm dark:border-zinc-700"
           aria-label="Region (tylko do przeglądania)"
         >
           <option value="">Wszystkie regiony</option>
@@ -95,7 +95,7 @@ export default function SegmentList({ segments, completedIds, plannedIds, select
               setStatus(e.target.value as typeof status);
               setLimit(PAGE);
             }}
-            className="min-w-0 flex-1 rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-sm dark:border-zinc-700"
+            className="min-w-0 flex-1 rounded-lg border border-zinc-300 px-2 py-1.5 text-sm dark:border-zinc-700"
             aria-label="Status"
           >
             <option value="all">Wszystkie</option>
@@ -106,7 +106,7 @@ export default function SegmentList({ segments, completedIds, plannedIds, select
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value as typeof sort)}
-            className="min-w-0 flex-1 rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-sm dark:border-zinc-700"
+            className="min-w-0 flex-1 rounded-lg border border-zinc-300 px-2 py-1.5 text-sm dark:border-zinc-700"
             aria-label="Sortowanie"
           >
             <option value="default">Sortuj: region</option>

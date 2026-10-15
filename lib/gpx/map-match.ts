@@ -69,7 +69,7 @@ export function matchActivity(
   activity: GpxActivity,
   segments: MatchableSegment[],
   completedIds: ReadonlySet<string>,
-  { bufferM = 25, minCoverage = 0.85, partialCoverage = 0.5, ...clean }: MatchOptions = {},
+  { bufferM = 25, minCoverage = 0.6, partialCoverage = 0.25, ...clean }: MatchOptions = {},
 ): MatchSummary {
   // Kolejność wg czasu, jeśli dostępny.
   let pts = activity.points;

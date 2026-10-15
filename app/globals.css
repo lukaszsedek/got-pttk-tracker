@@ -35,3 +35,52 @@ body {
   font-size: 18px;
   padding: 2px 8px;
 }
+
+/* Czytelne kontrolki formularzy (select/input/option) w obu motywach */
+:root {
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+}
+select,
+input:not([type="checkbox"]):not([type="radio"]),
+textarea {
+  color: #18181b;
+  background-color: #ffffff;
+  border-color: #a1a1aa;
+}
+select {
+  font-weight: 500;
+  cursor: pointer;
+}
+select option {
+  color: #18181b;
+  background-color: #ffffff;
+}
+input::placeholder {
+  color: #71717a;
+}
+select:focus,
+input:focus {
+  outline: 2px solid #16a34a;
+  outline-offset: 1px;
+}
+@media (prefers-color-scheme: dark) {
+  select,
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea {
+    color: #fafafa;
+    background-color: #27272a;
+    border-color: #52525b;
+  }
+  select option {
+    color: #fafafa;
+    background-color: #27272a;
+  }
+  input::placeholder {
+    color: #a1a1aa;
+  }
+}

@@ -76,6 +76,7 @@ export function matchActivity(
   }
   const track = simplifyTrack(denoise(pts, clean), clean.simplifyToleranceM ?? 3);
   const matches: SegmentMatch[] = [];
+  const coverages: { segmentId: string; coverage: number }[] = [];
   if (track.length < 2) return { activityId: activity.id, matches, newSegments: 0, totalGotPoints: 0 };
 
   const proj = makeProjector(track[0].lat, track[0].lng);
@@ -92,6 +93,7 @@ export function matchActivity(
     const samples = line.sample(10);
     const covered = samples.filter((s) => trackLine.project(s).dist <= bufferM).length;
     const coverage = covered / samples.length;
+    coverages.push({ segmentId: seg.id, coverage: Math.round(coverage * 100) / 100 });
     if (coverage < minCoverage) continue;
 
     // Kolejność punktów śladu w buforze → pozycje wzdłuż odcinka. Przerwa w buforze zamyka przebieg.
@@ -136,5 +138,10 @@ export function matchActivity(
     matches,
     newSegments: new Set(fresh.map((m) => m.segmentId)).size,
     totalGotPoints: fresh.reduce((s, m) => s + m.gotPoints, 0),
+    diagnostics: {
+      trackPoints: track.length,
+      trackLengthKm: Math.round((trackLine.length / 1000) * 10) / 10,
+      coverage: coverages.sort((a, b) => b.coverage - a.coverage),
+    },
   };
 }

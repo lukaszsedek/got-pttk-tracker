@@ -71,6 +71,12 @@ export interface MatchSummary {
   matches: SegmentMatch[];
   newSegments: number;
   totalGotPoints: number;
+  /** Diagnostyka: statystyki śladu i pokrycie każdego odcinka (także niedopasowanych). */
+  diagnostics?: {
+    trackPoints: number;
+    trackLengthKm: number;
+    coverage: { segmentId: string; coverage: number }[];
+  };
 }
 
 /** Surowy rekord tabeli PTTK przed powiązaniem z geometrią OSM. */

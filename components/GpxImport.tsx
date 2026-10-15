@@ -49,7 +49,18 @@ export default function GpxImport({ segments, completedIds, onConfirm }: Props) 
       {summary && (
         <div className="flex flex-col gap-2">
           {summary.matches.length === 0 ? (
-            <p>Nie wykryto żadnych odcinków PTTK w tym śladzie.</p>
+            <div className="flex flex-col gap-1">
+              <p>Nie wykryto żadnych odcinków PTTK w tym śladzie.</p>
+              {summary.diagnostics && (
+                <p className="text-xs text-gray-500">
+                  Ślad: {summary.diagnostics.trackPoints} pkt, {summary.diagnostics.trackLengthKm} km.
+                  Pokrycie odcinków (wymagane ≥ 85%):{" "}
+                  {summary.diagnostics.coverage
+                    .map((c) => `${names.get(c.segmentId) ?? c.segmentId} ${Math.round(c.coverage * 100)}%`)
+                    .join("; ")}
+                </p>
+              )}
+            </div>
           ) : (
             <>
               <p className="font-medium">

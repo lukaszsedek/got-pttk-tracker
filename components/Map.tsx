@@ -11,6 +11,8 @@ interface MapProps {
   completedIds: Set<string>;
   center?: [number, number]; // [lng, lat]
   zoom?: number;
+  /** Odcinek wybrany z listy — podświetlany i wycentrowany. */
+  selectedId?: string | null;
 }
 
 type SegmentProps = {
@@ -58,6 +60,7 @@ export default function Map({
   completedIds,
   center = [19.99, 49.255],
   zoom = 12.5,
+  selectedId = null,
 }: MapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -121,6 +124,15 @@ export default function Map({
         },
       });
 
+      map.addLayer({
+        id: "segments-selected",
+        type: "line",
+        source: SOURCE,
+        filter: ["==", ["get", "id"], ""],
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-color": "#f59e0b", "line-width": 7 },
+      });
+
       map.on("click", "segments-line", (e) => {
         const f = e.features?.[0];
         if (!f) return;
@@ -164,6 +176,23 @@ export default function Map({
     if (map.isStyleLoaded()) update();
     else map.once("load", update);
   }, [segments, completedIds]);
+
+  // Podświetlenie i przybliżenie wybranego odcinka.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => {
+      if (!map.getLayer("segments-selected")) return;
+      map.setFilter("segments-selected", ["==", ["get", "id"], selectedId ?? ""]);
+      const seg = segments.find((s) => s.id === selectedId);
+      if (!seg) return;
+      const b = new maplibregl.LngLatBounds();
+      for (const c of seg.geometry.coordinates) b.extend(c as [number, number]);
+      map.fitBounds(b, { padding: 80, maxZoom: 15, duration: 700 });
+    };
+    if (map.isStyleLoaded()) apply();
+    else map.once("load", apply);
+  }, [selectedId, segments]);
 
   return <div ref={containerRef} className="h-full w-full" />;
 }

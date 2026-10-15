@@ -22,5 +22,16 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Popup MapLibre w stylu aplikacji */
+.maplibregl-popup-content {
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+}
+.maplibregl-popup-close-button {
+  font-size: 18px;
+  padding: 2px 8px;
 }

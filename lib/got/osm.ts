@@ -29,7 +29,7 @@ export async function overpass(query: string, cacheDir: string): Promise<OsmElem
   if (existsSync(file)) return JSON.parse(readFileSync(file, "utf8")).elements;
 
   let lastErr = "";
-  for (let attempt = 0; attempt < 8; attempt++) {
+  for (let attempt = 0; attempt < 12; attempt++) {
     const url = ENDPOINTS[attempt % ENDPOINTS.length];
     try {
       const res = await fetch(url, {

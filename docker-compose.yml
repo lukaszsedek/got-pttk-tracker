@@ -35,6 +35,10 @@ services:
       target: build
     environment:
       DATABASE_URL: postgres://got:${DB_PASSWORD:-got}@db:5432/got_pttk
+    volumes:
+      # Wyniki skryptów (data/got/geometry) i cache Overpass zostają na hoście.
+      - ./data:/app/data
+      - ./.cache:/app/.cache
     depends_on:
       db:
         condition: service_healthy

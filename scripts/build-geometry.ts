@@ -11,13 +11,19 @@ const CACHE = join(ROOT, ".cache/overpass");
 const OUT = join(ROOT, "data/got/geometry");
 
 async function main() {
-  const wanted = process.argv.slice(2);
+  const args = process.argv.slice(2);
+  const opt = (name: string) => args.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
+  const wanted = args.filter((a) => !a.startsWith("--"));
+  const bboxOverride = opt("bbox")?.split(",").map(Number) as
+    | [number, number, number, number]
+    | undefined;
+  const suffix = opt("suffix");
   const all = JSON.parse(readFileSync(join(ROOT, "data/got/records.json"), "utf8")) as GotRecord[];
   const regions = wanted.length ? wanted : Object.keys(REGION_BBOX);
   mkdirSync(OUT, { recursive: true });
 
   for (const code of regions) {
-    const bbox = REGION_BBOX[code];
+    const bbox = bboxOverride ?? REGION_BBOX[code];
     if (!bbox) {
       console.warn(`Brak bbox dla ${code} — pomijam (dodaj w data/got/bboxes.ts)`);
       continue;
@@ -41,7 +47,7 @@ async function main() {
     const placesOut = Object.fromEntries(
       [...names].map(([n, c]) => [n, c ? [Math.round(c.lng * 1e5) / 1e5, Math.round(c.lat * 1e5) / 1e5] : null]),
     );
-    writeFileSync(join(OUT, `${code}.json`), JSON.stringify({ groupCode: code, places: placesOut, results }) + "\n");
+    writeFileSync(join(OUT, `${code}${suffix ? `-${suffix}` : ""}.json`), JSON.stringify({ groupCode: code, places: placesOut, results }) + "\n");
   }
 }
 

@@ -1,0 +1,474 @@
+[
+  {
+    "sourcePage": "tatry_wysokie.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/tatry_wysokie.html",
+    "groupCode": "T.01",
+    "regionName": "TATRY WYSOKIE",
+    "blocks": 24,
+    "records": 61
+  },
+  {
+    "sourcePage": "tatry_zachodnie.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/tatry_zachodnie.html",
+    "groupCode": "T.02",
+    "regionName": "TATRY ZACHODNIE",
+    "blocks": 37,
+    "records": 100
+  },
+  {
+    "sourcePage": "podtatrze.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/podtatrze.html",
+    "groupCode": "T.03",
+    "regionName": "PODTATRZE",
+    "blocks": 12,
+    "records": 48
+  },
+  {
+    "sourcePage": "tatry_sl_zach.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/tatry_sl_zach.html",
+    "groupCode": "SK-tatry-sl-zach",
+    "regionName": "ZAPADNE TATRY - (TATRY ZACHODNIE - Słowacja)",
+    "blocks": 23,
+    "records": 105
+  },
+  {
+    "sourcePage": "tatry_sl_wysokie.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/tatry_sl_wysokie.html",
+    "groupCode": "SK-tatry-sl-wysokie",
+    "regionName": "VYSOKE TATRY - (TATRY WYSOKIE - Słowacja)",
+    "blocks": 6,
+    "records": 92
+  },
+  {
+    "sourcePage": "tatry_sl_bielskie.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/tatry_sl_bielskie.html",
+    "groupCode": "SK-tatry-sl-bielskie",
+    "regionName": "BELANSKE TATRY - (TATRY BIELSKIE - Słowacja)",
+    "blocks": 3,
+    "records": 12
+  },
+  {
+    "sourcePage": "tatry_slowackie.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/tatry_slowackie.html",
+    "groupCode": "SK-tatry-slowackie",
+    "regionName": "tatry_slowackie.html",
+    "blocks": 5,
+    "records": 27
+  },
+  {
+    "sourcePage": "tatry_sl_niskie.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/tatry_sl_niskie.html",
+    "groupCode": "SK-tatry-sl-niskie",
+    "regionName": "NISKE TATRY - (NISKIE TATRY - Słowacja)",
+    "blocks": 73,
+    "records": 239
+  },
+  {
+    "sourcePage": "b_slaski-a.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/b_slaski-a.html",
+    "groupCode": "BZ.01",
+    "regionName": "BESKID ŚLĄSKI",
+    "blocks": 53,
+    "records": 185
+  },
+  {
+    "sourcePage": "zywiecki.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/zywiecki.html",
+    "groupCode": "BZ.02",
+    "regionName": "BESKID ŻYWIECKI",
+    "blocks": 64,
+    "records": 241
+  },
+  {
+    "sourcePage": "b_maly.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/b_maly.html",
+    "groupCode": "BZ.03",
+    "regionName": "BESKID MAŁY",
+    "blocks": 19,
+    "records": 91
+  },
+  {
+    "sourcePage": "b_sredni.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/b_sredni.html",
+    "groupCode": "BZ.04",
+    "regionName": "BESKID ŚREDNI",
+    "blocks": 46,
+    "records": 189
+  },
+  {
+    "sourcePage": "gorce.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/gorce.html",
+    "groupCode": "BZ.05",
+    "regionName": "GORCE",
+    "blocks": 30,
+    "records": 124
+  },
+  {
+    "sourcePage": "b_wyspowy.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/b_wyspowy.html",
+    "groupCode": "BZ.06",
+    "regionName": "BESKID WYSPOWY",
+    "blocks": 34,
+    "records": 160
+  },
+  {
+    "sourcePage": "orawa.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/orawa.html",
+    "groupCode": "BZ.07",
+    "regionName": "ORAWA",
+    "blocks": 14,
+    "records": 58
+  },
+  {
+    "sourcePage": "pieniny_spisz.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/pieniny_spisz.html",
+    "groupCode": "BZ.08",
+    "regionName": "SPISZ I PIENINY",
+    "blocks": 32,
+    "records": 96
+  },
+  {
+    "sourcePage": "b_sadecki.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/b_sadecki.html",
+    "groupCode": "BZ.09",
+    "regionName": "BESKID SĄDECKI",
+    "blocks": 38,
+    "records": 147
+  },
+  {
+    "sourcePage": "p_wielickie.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/p_wielickie.html",
+    "groupCode": "BZ.10",
+    "regionName": "POGÓRZE WIELICKIE",
+    "blocks": 4,
+    "records": 20
+  },
+  {
+    "sourcePage": "p_wisnickie.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/p_wisnickie.html",
+    "groupCode": "BZ.11",
+    "regionName": "POGÓRZE WIŚNICKIE",
+    "blocks": 6,
+    "records": 19
+  },
+  {
+    "sourcePage": "p_roznowskie.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/p_roznowskie.html",
+    "groupCode": "BZ.12",
+    "regionName": "POGÓRZE ROŻNOWSKIE",
+    "blocks": 14,
+    "records": 60
+  },
+  {
+    "sourcePage": "p_ciezkowickie.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/p_ciezkowickie.html",
+    "groupCode": "BW.01",
+    "regionName": "POGÓRZE CIĘŻKOWICKIE",
+    "blocks": 18,
+    "records": 54
+  },
+  {
+    "sourcePage": "niski-zachod.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/niski-zachod.html",
+    "groupCode": "BW.02",
+    "regionName": "BESKID NISKI (CZEŚĆ ZACHODNIA)",
+    "blocks": 67,
+    "records": 265
+  },
+  {
+    "sourcePage": "niski-wschod.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/niski-wschod.html",
+    "groupCode": "BW.02",
+    "regionName": "BESKID NISKI (CZEŚĆ WSCHODNIA)",
+    "blocks": 39,
+    "records": 162
+  },
+  {
+    "sourcePage": "bieszczady.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/bieszczady.html",
+    "groupCode": "BW.03",
+    "regionName": "BIESZCZADY",
+    "blocks": 99,
+    "records": 360
+  },
+  {
+    "sourcePage": "p_strzyzowsko-dynowskie.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/p_strzyzowsko-dynowskie.html",
+    "groupCode": "BW.04",
+    "regionName": "POGÓRZE STRZYŻOWSKO-DYNOWSKIE",
+    "blocks": 28,
+    "records": 112
+  },
+  {
+    "sourcePage": "p_przemyskie.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/p_przemyskie.html",
+    "groupCode": "BW.05",
+    "regionName": "POGÓRZE PRZEMYSKIE",
+    "blocks": 30,
+    "records": 108
+  },
+  {
+    "sourcePage": "swietokrzyskie-l01.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/swietokrzyskie-l01.html",
+    "groupCode": "Ł.01",
+    "regionName": "GÓRY ŚWIĘTOKRZYSKIE",
+    "blocks": 9,
+    "records": 26
+  },
+  {
+    "sourcePage": "swietokrzyskie-l02.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/swietokrzyskie-l02.html",
+    "groupCode": "Ł.02",
+    "regionName": "GÓRY ŚWIĘTOKRZYSKIE",
+    "blocks": 5,
+    "records": 13
+  },
+  {
+    "sourcePage": "swietokrzyskie-l03.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/swietokrzyskie-l03.html",
+    "groupCode": "Ł.03",
+    "regionName": "GÓRY ŚWIĘTOKRZYSKIE",
+    "blocks": 22,
+    "records": 60
+  },
+  {
+    "sourcePage": "swietokrzyskie-l04.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/swietokrzyskie-l04.html",
+    "groupCode": "Ł.04",
+    "regionName": "GÓRY ŚWIĘTOKRZYSKIE",
+    "blocks": 33,
+    "records": 99
+  },
+  {
+    "sourcePage": "swietokrzyskie-l05.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/swietokrzyskie-l05.html",
+    "groupCode": "Ł.05",
+    "regionName": "GÓRY ŚWIĘTOKRZYSKIE",
+    "blocks": 23,
+    "records": 73
+  },
+  {
+    "sourcePage": "sudety_izerskie-s01.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/sudety/izerskie-s01.html",
+    "groupCode": "S.01",
+    "regionName": "GÓRY IZERSKIE",
+    "blocks": 25,
+    "records": 88
+  },
+  {
+    "sourcePage": "sudety_izerskie-s02.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/sudety/izerskie-s02.html",
+    "groupCode": "S.02",
+    "regionName": "POGÓRZE IZERSKIE",
+    "blocks": 33,
+    "records": 103
+  },
+  {
+    "sourcePage": "sudety_karkonosze-s03.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/sudety/karkonosze-s03.html",
+    "groupCode": "S.03",
+    "regionName": "KARKONOSZE",
+    "blocks": 51,
+    "records": 168
+  },
+  {
+    "sourcePage": "sudety_kotlina-jeleniogorska-s04.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/sudety/kotlina-jeleniogorska-s04.html",
+    "groupCode": "S.04",
+    "regionName": "KOTLINA JELENIOGÓRSKA",
+    "blocks": 26,
+    "records": 71
+  },
+  {
+    "sourcePage": "sudety_rudawy-janowickie-s05.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/sudety/rudawy-janowickie-s05.html",
+    "groupCode": "S.05",
+    "regionName": "RUDAWY JANOWICKIE",
+    "blocks": 28,
+    "records": 90
+  },
+  {
+    "sourcePage": "sudety_kaczawskie-s06.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/sudety/kaczawskie-s06.html",
+    "groupCode": "S.06",
+    "regionName": "GÓRY KACZAWSKIE",
+    "blocks": 30,
+    "records": 101
+  },
+  {
+    "sourcePage": "sudety_pogorze-kaczawskie-s07.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/sudety/pogorze-kaczawskie-s07.html",
+    "groupCode": "S.07",
+    "regionName": "POGÓRZE KACZAWSKIE",
+    "blocks": 41,
+    "records": 135
+  },
+  {
+    "sourcePage": "sudety_kotlina-kamiennogorska-s08.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/sudety/kotlina-kamiennogorska-s08.html",
+    "groupCode": "S.08",
+    "regionName": "KOTLINA KAMIENNOGÓRSKA",
+    "blocks": 27,
+    "records": 101
+  },
+  {
+    "sourcePage": "sudety_kamienne-s09.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/sudety/kamienne-s09.html",
+    "groupCode": "S.09",
+    "regionName": "GÓRY KAMIENNE",
+    "blocks": 38,
+    "records": 120
+  },
+  {
+    "sourcePage": "sudety_walbrzyskie-s10.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/sudety/walbrzyskie-s10.html",
+    "groupCode": "S.10",
+    "regionName": "GÓRY WAŁBRZYSKIE, POGÓRZE BOLKOWSKO-WAŁBRZYSKIE",
+    "blocks": 46,
+    "records": 146
+  },
+  {
+    "sourcePage": "sudety_sowie-s11.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/sudety/sowie-s11.html",
+    "groupCode": "S.11",
+    "regionName": "GÓRY SOWIE, WZGÓRZA WŁODZICKIE",
+    "blocks": 33,
+    "records": 125
+  },
+  {
+    "sourcePage": "sudety_bardzkie-s12.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/sudety/bardzkie-s12.html",
+    "groupCode": "S.12",
+    "regionName": "GÓRY BARDZKIE",
+    "blocks": 16,
+    "records": 57
+  },
+  {
+    "sourcePage": "sudety_stolowe-s13.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/sudety/stolowe-s13.html",
+    "groupCode": "S.13",
+    "regionName": "GÓRY STOŁOWE, WZGÓRZA LEWIŃSKIE",
+    "blocks": 42,
+    "records": 133
+  },
+  {
+    "sourcePage": "sudety_orlickie-s14.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/sudety/orlickie-s14.html",
+    "groupCode": "S.14",
+    "regionName": "GÓRY ORLICKIE, GÓRY BYSTRZYCKIE",
+    "blocks": 26,
+    "records": 101
+  },
+  {
+    "sourcePage": "sudety_kotlina_klodzka-s15.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/sudety/kotlina_klodzka-s15.html",
+    "groupCode": "S.15",
+    "regionName": "KOTLINA KŁODZKA, RÓW GÓRNEJ NYSY",
+    "blocks": 8,
+    "records": 20
+  },
+  {
+    "sourcePage": "sudety_snieznik-s16.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/sudety/snieznik-s16.html",
+    "groupCode": "S.16",
+    "regionName": "MASYW ŚNIEŻNIKA, GÓRY BIALSKIE",
+    "blocks": 52,
+    "records": 163
+  },
+  {
+    "sourcePage": "sudety_zlote-s17.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/sudety/zlote-s17.html",
+    "groupCode": "S.17",
+    "regionName": "GÓRY ZŁOTE",
+    "blocks": 26,
+    "records": 75
+  },
+  {
+    "sourcePage": "sudety_opawskie-s18.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/sudety/opawskie-s18.html",
+    "groupCode": "S.18",
+    "regionName": "GÓRY OPAWSKIE",
+    "blocks": 19,
+    "records": 54
+  },
+  {
+    "sourcePage": "sudety_strzegomskie-s19.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/sudety/strzegomskie-s19.html",
+    "groupCode": "S.19",
+    "regionName": "WZGÓRZA STRZEGOMSKIE",
+    "blocks": 4,
+    "records": 16
+  },
+  {
+    "sourcePage": "sudety_sleza-s20.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/sudety/sleza-s20.html",
+    "groupCode": "S.20",
+    "regionName": "MASYW ŚLĘŻY,RÓWNINA ŚWIDNICKA,KOTLINA DZIERŻONIOWSKA",
+    "blocks": 25,
+    "records": 75
+  },
+  {
+    "sourcePage": "sudety_paczkowskie-s21.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/sudety/paczkowskie-s21.html",
+    "groupCode": "S.21",
+    "regionName": "WZGÓRZA NIEMCZAŃSKO-STRZELIŃSKIE, PRZEDGÓRZE PACZKOWSKIE",
+    "blocks": 47,
+    "records": 155
+  },
+  {
+    "sourcePage": "slowacja_slowacki-raj.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/slowacja/slowacki-raj.html",
+    "groupCode": "SK-slowacja-slowacki-raj",
+    "regionName": "SŁOWACKI RAJ",
+    "blocks": 44,
+    "records": 125
+  },
+  {
+    "sourcePage": "slowacja_mala_fatra_vratna_sl.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/slowacja/mala_fatra_vratna_sl.html",
+    "groupCode": "SK-slowacja-mala-fatra-vratna-sl",
+    "regionName": "MAŁA FATRA – Vrátna",
+    "blocks": 41,
+    "records": 88
+  },
+  {
+    "sourcePage": "slowacja_mala_fatra_martinske_hole_sl.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/slowacja/mala_fatra_martinske_hole_sl.html",
+    "groupCode": "SK-slowacja-mala-fatra-martinske-hole-sl",
+    "regionName": "MAŁA FATRA – Martinské hole",
+    "blocks": 24,
+    "records": 61
+  },
+  {
+    "sourcePage": "slowacja_wielka_fatra_sl.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/slowacja/wielka_fatra_sl.html",
+    "groupCode": "SK-slowacja-wielka-fatra-sl",
+    "regionName": "VELKÁ FATRA i CHOĆ",
+    "blocks": 37,
+    "records": 195
+  },
+  {
+    "sourcePage": "slowacja_kysucke__beskydy_sl.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/slowacja/kysucke_%20beskydy_sl.html",
+    "groupCode": "SK-slowacja-kysucke--beskydy-sl",
+    "regionName": "KYSUCKE BESKYDY",
+    "blocks": 14,
+    "records": 45
+  },
+  {
+    "sourcePage": "slowacja_oravskie__beskydy_sl.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/slowacja/oravskie_%20beskydy_sl.html",
+    "groupCode": "SK-slowacja-oravskie--beskydy-sl",
+    "regionName": "ORAVSKÉ BESKYDY",
+    "blocks": 19,
+    "records": 36
+  },
+  {
+    "sourcePage": "slowacja_pieniny_sl.html",
+    "url": "https://pttkhts.hg.pl/ktg/komisja-tg/got/slowacja/pieniny_sl.html",
+    "groupCode": "SK-slowacja-pieniny-sl",
+    "regionName": "PIENINY",
+    "blocks": 5,
+    "records": 22
+  }
+]

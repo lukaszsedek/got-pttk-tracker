@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "db:migrate": "tsx scripts/db.ts migrate",
-    "db:seed": "tsx scripts/db.ts seed"
+    "db:seed": "tsx scripts/db.ts seed",
+    "scrape:got": "tsx scripts/scrape-got.ts"
   },
   "dependencies": {
     "@turf/turf": "^7.4.0",
@@ -25,6 +26,7 @@
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cheerio": "^1.2.0",
     "dotenv": "^18.0.8",
     "eslint": "^9",
     "eslint-config-next": "16.4.1",

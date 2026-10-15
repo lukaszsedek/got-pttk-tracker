@@ -93,6 +93,8 @@ export function relationToRoute(rel: OverpassRelation): OsmRoute | null {
 export async function fetchHikingRoutes(bbox: BBox, signal?: AbortSignal): Promise<OsmRoute[]> {
   const res = await fetch(ENDPOINT, {
     method: "POST",
+    // Overpass odrzuca (406) zapytania bez User-Agent.
+    headers: { "User-Agent": "got-pttk-tracker/0.1 (+https://github.com/lukaszsedek/got-pttk-tracker)" },
     body: new URLSearchParams({ data: buildHikingQuery(bbox) }),
     signal,
   });

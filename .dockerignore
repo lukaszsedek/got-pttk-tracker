@@ -8,3 +8,7 @@ README.md
 npm-debug.log
 .pgdata
 backups
+**/.pgdata
+**/backups
+**/.cache
+**/node_modules

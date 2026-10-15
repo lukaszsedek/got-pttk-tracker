@@ -4,12 +4,14 @@ import { useMemo, useState } from "react";
 import { Card } from "@/components/ui";
 import { dateInputToIso, dirPoints, directionLabel, key, todayInput } from "@/lib/booklet";
 import { badgeStatus } from "@/lib/badges";
+import type { scoreEntries } from "@/lib/badges";
 import type { Direction, PlanItem, SegmentRow } from "@/types/pttk";
 
 interface Props {
   plan: PlanItem[];
   segById: ReadonlyMap<string, SegmentRow>;
   currentPoints: number;
+  scored: ReturnType<typeof scoreEntries>;
   goal: number;
   onSelect: (segmentId: string) => void;
   onRemove: (segmentId: string, direction: Direction) => void;
@@ -20,7 +22,7 @@ interface Props {
   onCompleteAll: (items: { segmentId: string; direction: Direction }[], completedAtIso: string) => void;
 }
 
-export default function PlanPanel({ plan, segById, currentPoints, goal, onSelect, onRemove, onToggle, planMode, onPlanMode, onCompleteAll }: Props) {
+export default function PlanPanel({ plan, segById, currentPoints, scored, goal, onSelect, onRemove, onToggle, planMode, onPlanMode, onCompleteAll }: Props) {
   const [date, setDate] = useState(todayInput());
 
   const items = useMemo(
@@ -39,7 +41,7 @@ export default function PlanPanel({ plan, segById, currentPoints, goal, onSelect
   const after = currentPoints + points;
   const gain = items.reduce((a, i) => a + (i.s.geometry ? i.s.elevationGainM : 0), 0);
   const hours = Math.round(((km / 4 + gain / 400) * 10)) / 10; // ok. 4 km/h + 400 m/h w górę
-  const badge = badgeStatus(after).current;
+  const badge = badgeStatus(scored.domestic + points, scored.foreign).current;
   const clear = () => items.forEach((i) => onRemove(i.p.segmentId, i.p.direction));
 
   return (

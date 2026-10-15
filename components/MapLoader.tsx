@@ -10,7 +10,7 @@ import SegmentDetail from "@/components/SegmentDetail";
 import SegmentList from "@/components/SegmentList";
 import { Card } from "@/components/ui";
 import type { MapSegment } from "@/components/Map";
-import { badgeStatus } from "@/lib/badges";
+import { badgeStatus, scoreEntries } from "@/lib/badges";
 import { dirPoints, key } from "@/lib/booklet";
 import type { Direction, PlanItem, SegmentRow, UserTrailProgress } from "@/types/pttk";
 
@@ -170,7 +170,19 @@ export default function MapLoader() {
     void togglePlan(id, order.find((d) => !done.has(d)) ?? order[0]);
   };
   const planIds = plannedIds;
-  const badge = badgeStatus(points).current;
+  const scored = useMemo(
+    () =>
+      scoreEntries(
+        progress.flatMap((p) => {
+          const s = segById.get(p.segmentId);
+          return s
+            ? [{ day: p.completedAt.slice(0, 10), points: dirPoints(s, p.direction), foreign: s.groupId.startsWith("SK-") }]
+            : [];
+        }),
+      ),
+    [progress, segById],
+  );
+  const badge = badgeStatus(scored.domestic, scored.foreign).current;
 
   const tabs: [Tab, string][] = [
     ["trasy", "Trasy"],
@@ -313,6 +325,7 @@ export default function MapLoader() {
                 plan={plan}
                 segById={segById}
                 currentPoints={points}
+                scored={scored}
                 goal={goal}
                 onSelect={select}
                 onRemove={togglePlan}
@@ -326,7 +339,7 @@ export default function MapLoader() {
             )}
 
             {tab === "odznaki" && (
-              <BadgesPanel progress={progress} segById={segById} onSetGoal={changeGoal} />
+              <BadgesPanel scored={scored} onSetGoal={changeGoal} />
             )}
 
             {tab === "import" && (

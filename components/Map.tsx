@@ -36,7 +36,8 @@ interface MapProps {
   /** Odcinki wykryte w podglądzie importu GPX. */
   highlightIds?: ReadonlySet<string>;
   /** Ślad aktywności [lng, lat][] — rysowany na niebiesko. */
-  track?: [number, number][] | null;
+  /** Ślady aktywności (każdy plik GPX = osobna linia). */
+  track?: [number, number][][] | null;
   onSelect?: (id: string) => void;
 }
 
@@ -174,7 +175,7 @@ export default function Map({
       });
       map.addSource(TRACK, {
         type: "geojson",
-        data: { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [] } },
+        data: { type: "Feature", properties: {}, geometry: { type: "MultiLineString", coordinates: [] } },
       });
 
       map.addLayer({
@@ -343,14 +344,14 @@ export default function Map({
       });
 
       readyRef.current = true;
-      if (l.track && l.track.length > 1) {
+      if (l.track && l.track.flat().length > 1) {
         // Ślad ustawiony, zanim mapa skończyła się ładować.
         (map.getSource(TRACK) as maplibregl.GeoJSONSource).setData({
           type: "Feature",
           properties: {},
-          geometry: { type: "LineString", coordinates: l.track },
+          geometry: { type: "MultiLineString", coordinates: l.track.filter((t) => t.length > 1) },
         });
-        map.fitBounds(bounds(l.track), { padding: 60, duration: 0 });
+        map.fitBounds(bounds(l.track.flat()), { padding: 60, duration: 0 });
         fittedRef.current = true;
       } else if (l.segments.length && !fittedRef.current) {
         fitAll(map, l.segments);
@@ -424,9 +425,9 @@ export default function Map({
     (map.getSource(TRACK) as maplibregl.GeoJSONSource).setData({
       type: "Feature",
       properties: {},
-      geometry: { type: "LineString", coordinates: track ?? [] },
+      geometry: { type: "MultiLineString", coordinates: (track ?? []).filter((t) => t.length > 1) },
     });
-    if (track && track.length > 1) map.fitBounds(bounds(track), { padding: 60, duration: 700 });
+    if (track && track.flat().length > 1) map.fitBounds(bounds(track.flat()), { padding: 60, duration: 700 });
   }, [track]);
 
   // Wybrany odcinek.

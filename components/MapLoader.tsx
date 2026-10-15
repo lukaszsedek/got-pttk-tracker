@@ -55,7 +55,7 @@ export default function MapLoader() {
   const [segments, setSegments] = useState<SegmentRow[] | null>(null);
   const [progress, setProgress] = useState<UserTrailProgress[]>([]);
   const [plan, setPlan] = useState<PlanItem[]>([]);
-  const [track, setTrack] = useState<[number, number][] | null>(null);
+  const [track, setTrack] = useState<[number, number][][] | null>(null);
   const [preview, setPreview] = useState<string[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [ui] = useState(loadUi);
@@ -478,6 +478,10 @@ export default function MapLoader() {
           currentPoints={points}
           entries={entries}
           earned={earned}
+          segments={segments ?? []}
+          doneKeys={doneKeys}
+          planKeys={planKeys}
+          onAddMany={(items) => items.forEach((i) => void togglePlan(i.segmentId, i.direction))}
           goal={goal}
           onSelect={select}
           onRemove={togglePlan}

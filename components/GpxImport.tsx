@@ -11,7 +11,7 @@ interface Props {
   /** Odcinki z wyznaczonym przebiegiem — wykrywanie jest automatyczne, bez wyboru grupy. */
   segments: (MatchableSegment & { name: string })[];
   /** Rysuje przebieg aktywności na mapie. */
-  onTrack?: (coords: [number, number][] | null) => void;
+  onTrack?: (coords: [number, number][][] | null) => void;
   /** Odcinki wykryte w bieżącym podglądzie (do podświetlenia na mapie). */
   onPreview?: (segmentIds: string[], partialIds?: string[]) => void;
   /** Bez własnej karty (osadzone w zewnętrznej). */
@@ -32,33 +32,37 @@ export default function GpxImport({ segments, completedIds, onConfirm, onTrack, 
   const [dragging, setDragging] = useState(false);
   const [accepted, setAccepted] = useState<Set<string>>(new Set());
 
-  async function handle(file: File | undefined) {
+  async function handle(files: File[]) {
     setError(null);
     setSummary(null);
     setAccepted(new Set());
     onTrack?.(null);
     onPreview?.([]);
-    if (!file) return;
-    setFileName(file.name);
+    if (!files.length) return;
+    setFileName(files.length === 1 ? files[0].name : `${files.length} plików`);
     try {
-      const activity = parseGpx(await file.text(), file.name);
-      onTrack?.(activity.points.map((p) => [p.lng, p.lat] as [number, number]));
-      const parts = splitActivityByDay(activity);
+      const activities = [];
+      for (const f of files) activities.push(parseGpx(await f.text(), f.name));
+      onTrack?.(activities.map((a) => a.points.map((p) => [p.lng, p.lat] as [number, number])));
+      const parts = activities.flatMap((a) => splitActivityByDay(a));
       const results = parts.map((a) => matchActivity(a, segments, completedIds));
+      const multi = parts.length > 1;
       // Scalenie: ten sam odcinek/kierunek liczymy raz (najwcześniejszy dzień).
       const seen = new Map<string, SegmentMatch>();
-      results.forEach((r, i) => {
-        for (const m of r.matches) {
+      const order = parts.map((_, i) => i).sort((x, y) => (parts[x].startedAt ?? "").localeCompare(parts[y].startedAt ?? ""));
+      for (const i of order) {
+        for (const m of results[i].matches) {
           const k = `${m.segmentId}|${m.direction}`;
-          if (!seen.has(k)) seen.set(k, { ...m, day: parts.length > 1 ? parts[i].startedAt : undefined });
+          if (!seen.has(k)) seen.set(k, { ...m, day: multi ? parts[i].startedAt : undefined });
         }
-      });
+      }
       const matches = [...seen.values()];
       const fresh = matches.filter((m) => !m.alreadyCompleted && !m.partial);
+      const first = activities[0];
       const result: MatchSummary = {
         ...results[0],
-        activityId: activity.id,
-        startedAt: activity.startedAt,
+        activityId: files.length > 1 ? `multi:${files.length}:${first.id}` : first.id,
+        startedAt: first.startedAt,
         matches,
         newSegments: fresh.length,
         totalGotPoints: fresh.reduce((a, m) => a + m.gotPoints, 0),
@@ -95,7 +99,7 @@ export default function GpxImport({ segments, completedIds, onConfirm, onTrack, 
         onDrop={(e) => {
           e.preventDefault();
           setDragging(false);
-          void handle(e.dataTransfer.files[0]);
+          void handle([...e.dataTransfer.files]);
         }}
         className={`flex cursor-pointer flex-col items-center gap-1 rounded-xl border-2 border-dashed px-4 py-6 text-center text-sm transition-colors ${
           dragging
@@ -104,14 +108,15 @@ export default function GpxImport({ segments, completedIds, onConfirm, onTrack, 
         }`}
       >
         <span className="text-2xl">📍</span>
-        <span className="font-medium">Przeciągnij plik .gpx lub kliknij</span>
+        <span className="font-medium">Przeciągnij pliki .gpx lub kliknij</span>
         <span className="text-xs text-zinc-500">Garmin, Suunto, mapa-turystyczna.pl…</span>
         <input
           type="file"
           accept=".gpx,application/gpx+xml"
+          multiple
           className="sr-only"
           onChange={(e) => {
-            void handle(e.target.files?.[0]);
+            void handle([...(e.target.files ?? [])]);
             e.target.value = "";
           }}
         />

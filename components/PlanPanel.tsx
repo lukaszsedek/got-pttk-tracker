@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Card } from "@/components/ui";
+import PlanSuggest from "@/components/PlanSuggest";
 import { dateInputToIso, dirPoints, directionLabel, key, todayInput } from "@/lib/booklet";
 import { cycleStatus, type EarnedBadge, type ScoreEntry } from "@/lib/badges";
 import type { Direction, PlanItem, SegmentRow } from "@/types/pttk";
@@ -12,6 +13,10 @@ interface Props {
   currentPoints: number;
   entries: ScoreEntry[];
   earned: EarnedBadge[];
+  segments: SegmentRow[];
+  doneKeys: ReadonlySet<string>;
+  planKeys: ReadonlySet<string>;
+  onAddMany: (items: { segmentId: string; direction: Direction }[]) => void;
   goal: number;
   onSelect: (segmentId: string) => void;
   onRemove: (segmentId: string, direction: Direction) => void;
@@ -22,7 +27,7 @@ interface Props {
   onCompleteAll: (items: { segmentId: string; direction: Direction }[], completedAtIso: string) => void;
 }
 
-export default function PlanPanel({ plan, segById, currentPoints, entries, earned, goal, onSelect, onRemove, onToggle, planMode, onPlanMode, onCompleteAll }: Props) {
+export default function PlanPanel({ plan, segById, currentPoints, entries, earned, segments, doneKeys, planKeys, onAddMany, goal, onSelect, onRemove, onToggle, planMode, onPlanMode, onCompleteAll }: Props) {
   const [date, setDate] = useState(todayInput());
 
   const items = useMemo(
@@ -51,6 +56,7 @@ export default function PlanPanel({ plan, segById, currentPoints, entries, earne
   const clear = () => items.forEach((i) => onRemove(i.p.segmentId, i.p.direction));
 
   return (
+    <div className="flex flex-col gap-4">
     <Card title={`Planer tras (${items.length})`}>
       <label className="mb-3 flex cursor-pointer items-center gap-2 rounded-xl bg-purple-50 p-2.5 text-sm text-purple-900 dark:bg-purple-950/40 dark:text-purple-200">
         <input type="checkbox" checked={planMode} onChange={(e) => onPlanMode(e.target.checked)} />
@@ -175,5 +181,13 @@ export default function PlanPanel({ plan, segById, currentPoints, entries, earne
         </>
       )}
     </Card>
+    <PlanSuggest
+      segments={segments}
+      doneKeys={doneKeys}
+      planKeys={planKeys}
+      missing={before.next && !before.ready ? Math.max(0, before.need - before.have - points) : 0}
+      onAdd={onAddMany}
+    />
+    </div>
   );
 }

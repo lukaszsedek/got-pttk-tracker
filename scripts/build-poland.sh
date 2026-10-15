@@ -19,18 +19,18 @@ extract() {
   parts=()
   for v in "$@"; do
     fetch "$v"
-    $PY scripts/osm_extract.py "$PBF/$v.osm.pbf" "$EX/$out.$v.json" "$bbox"
+    [ -s "$EX/$out.$v.json" ] || $PY scripts/osm_extract.py "$PBF/$v.osm.pbf" "$EX/$out.$v.json" "$bbox"
     parts+=("$EX/$out.$v.json")
   done
   node -e '
     const fs=require("fs");const [out,...p]=process.argv.slice(1);
     const m={features:[],routes:[],highways:[]};
-    for(const f of p){const j=JSON.parse(fs.readFileSync(f,"utf8"));for(const k in m)m[k].push(...j[k]);fs.unlinkSync(f);}
+    for(const f of p){const j=JSON.parse(fs.readFileSync(f,"utf8"));for(const k in m)for(const x of j[k])m[k].push(x);fs.unlinkSync(f);}
     fs.writeFileSync(out,JSON.stringify(m));' "$EX/$out.json" "${parts[@]}"
 }
 build() { # <extract> <grupy...>
   e=$1; shift
-  npx tsx scripts/build-geometry.ts --extract="$EX/$e.json" "$@"
+  NODE_OPTIONS=--max-old-space-size=8192 npx tsx scripts/build-geometry.ts --extract="$EX/$e.json" "$@"
 }
 
 target="${1:-all}"

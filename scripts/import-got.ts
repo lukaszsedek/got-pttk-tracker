@@ -49,6 +49,10 @@ async function main() {
     }
   }
 
+  // Przewyższenia (scripts/add-elevation.ts), jeśli policzone.
+  const elevFile = join(ROOT, "data/got/elevation.json");
+  const elev: Record<string, number> = existsSync(elevFile) ? JSON.parse(readFileSync(elevFile, "utf8")) : {};
+
   // Usuń dawne dane przykładowe (T01_001…).
   await pool.query(`DELETE FROM segments WHERE id ~ '^T01_[0-9]+$'`);
   await pool.query(`DELETE FROM nodes WHERE id IN ('kuznice','przel-miedzy-kopami','myslenickie-turnie','kasprowy-wierch')`);
@@ -86,7 +90,7 @@ async function main() {
   for (let i = 0; i < records.length; i += BATCH) {
     const part = records.slice(i, i + BATCH);
     const cols: Record<string, unknown[]> = {
-      id: [], grp: [], from: [], to: [], name: [], region: [], pf: [], pb: [], km: [], color: [], unmarked: [], status: [], geom: [],
+      id: [], grp: [], from: [], to: [], name: [], region: [], pf: [], pb: [], km: [], gain: [], color: [], unmarked: [], status: [], geom: [],
     };
     for (const r of part) {
       const g = geo.get(r.id);
@@ -101,6 +105,7 @@ async function main() {
       cols.pf.push(r.pointsForward ?? 0);
       cols.pb.push(r.pointsBackward ?? r.pointsForward ?? 0);
       cols.km.push(usable ? (g!.distanceKm ?? 0) : 0);
+      cols.gain.push(usable ? (elev[r.id] ?? 0) : 0);
       cols.color.push(r.trailColors[0] ?? null);
       cols.unmarked.push(r.unmarked);
       cols.status.push(g?.status ?? "no-geometry-run");
@@ -110,17 +115,17 @@ async function main() {
       `INSERT INTO segments (id, group_id, from_node_id, to_node_id, name, region_name,
                              got_points_forward, got_points_backward, distance_km,
                              elevation_gain_m, trail_color, unmarked, geom_status, geom)
-       SELECT t.id, t.grp, t.f, t.t, t.name, t.region, t.pf, t.pb, t.km, 0, t.color, t.unmarked, t.status,
+       SELECT t.id, t.grp, t.f, t.t, t.name, t.region, t.pf, t.pb, t.km, t.gain, t.color, t.unmarked, t.status,
               CASE WHEN t.geom IS NULL THEN NULL ELSE ST_SetSRID(ST_GeomFromGeoJSON(t.geom), 4326) END
          FROM unnest($1::text[], $2::text[], $3::text[], $4::text[], $5::text[], $6::text[],
-                     $7::int[], $8::int[], $9::real[], $10::text[], $11::bool[], $12::text[], $13::text[])
-              AS t(id, grp, f, t, name, region, pf, pb, km, color, unmarked, status, geom)
+                     $7::int[], $8::int[], $9::real[], $10::text[], $11::bool[], $12::text[], $13::text[], $14::int[])
+              AS t(id, grp, f, t, name, region, pf, pb, km, color, unmarked, status, geom, gain)
        ON CONFLICT (id) DO UPDATE SET
          name = EXCLUDED.name, region_name = EXCLUDED.region_name,
          got_points_forward = EXCLUDED.got_points_forward, got_points_backward = EXCLUDED.got_points_backward,
-         distance_km = EXCLUDED.distance_km, trail_color = EXCLUDED.trail_color, unmarked = EXCLUDED.unmarked,
+         distance_km = EXCLUDED.distance_km, elevation_gain_m = EXCLUDED.elevation_gain_m, trail_color = EXCLUDED.trail_color, unmarked = EXCLUDED.unmarked,
          geom_status = EXCLUDED.geom_status, geom = COALESCE(EXCLUDED.geom, segments.geom)`,
-      [cols.id, cols.grp, cols.from, cols.to, cols.name, cols.region, cols.pf, cols.pb, cols.km, cols.color, cols.unmarked, cols.status, cols.geom],
+      [cols.id, cols.grp, cols.from, cols.to, cols.name, cols.region, cols.pf, cols.pb, cols.km, cols.color, cols.unmarked, cols.status, cols.geom, cols.gain],
     );
   }
   console.log(`zaimportowano ${records.length} odcinków, w tym ${withGeom} z przebiegiem na mapie`);

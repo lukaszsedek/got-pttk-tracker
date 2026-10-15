@@ -45,6 +45,12 @@ export default function SegmentDetail({ segment, progress, plan, onComplete, onC
         {segment.geometry ? ` · ${segment.distanceKm} km` : " · brak przebiegu na mapie"}
       </p>
 
+      {!segment.geometry && segment.geomStatus === "suspect" && (
+        <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+          Automatyczny przebieg został odrzucony jako zbyt długi (prawdopodobnie błędnie rozpoznany punkt).
+          Możesz narysować przebieg ręcznie.
+        </p>
+      )}
       {!segment.geometry ? (
         <button
           onClick={onDraw}

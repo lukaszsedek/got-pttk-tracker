@@ -15,6 +15,22 @@ const ROOT = join(__dirname, "..");
 const includeDetours = process.argv.includes("--include-detours");
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
+const hav = (a: [number, number], b: [number, number]) => {
+  const R = 6371, r = Math.PI / 180;
+  const dLat = (b[1] - a[1]) * r, dLng = (b[0] - a[0]) * r;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[1] * r) * Math.cos(b[1] * r) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+};
+
+/** Przebieg wyraźnie za długi jak na odcinek GOT (zwykle błędnie rozpoznana nazwa punktu). */
+const isSuspect = (g: RecordGeometry | undefined) => {
+  const c = g?.coordinates;
+  if (!c || c.length < 2) return false;
+  const km = g.distanceKm ?? 0;
+  const straight = hav(c[0] as [number, number], c[c.length - 1] as [number, number]);
+  return km > 15 || km / Math.max(straight, 0.3) > 3.5;
+};
+
 const slug = (s: string) =>
   s
     .toLowerCase()
@@ -94,7 +110,8 @@ async function main() {
     };
     for (const r of part) {
       const g = geo.get(r.id);
-      const usable = !!g?.coordinates && (g.status === "ok" || (includeDetours && g.status === "detour"));
+      const suspect = isSuspect(g);
+      const usable = !!g?.coordinates && !suspect && (g.status === "ok" || (includeDetours && g.status === "detour"));
       if (usable) withGeom++;
       cols.id.push(r.id);
       cols.grp.push(r.groupCode);
@@ -108,7 +125,7 @@ async function main() {
       cols.gain.push(usable ? (elev[r.id] ?? 0) : 0);
       cols.color.push(r.trailColors[0] ?? null);
       cols.unmarked.push(r.unmarked);
-      cols.status.push(g?.status ?? "no-geometry-run");
+      cols.status.push(suspect ? "suspect" : (g?.status ?? "no-geometry-run"));
       cols.geom.push(usable ? JSON.stringify({ type: "LineString", coordinates: g!.coordinates }) : null);
     }
     await pool.query(

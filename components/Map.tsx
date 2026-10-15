@@ -24,6 +24,9 @@ interface MapProps {
   regionFilter?: string;
   /** Akcja z popupu: zaliczenie kierunku / plan / otwarcie szczegółów. */
   onQuick?: (id: string, action: "forward" | "backward" | "plan" | "open") => void;
+  /** Tryb ręcznego rysowania przebiegu: punkty [lng,lat] i obsługa kliknięcia mapy. */
+  drawPoints?: [number, number][] | null;
+  onDrawClick?: (p: [number, number]) => void;
   /** Stan widoku do zapamiętania (środek, zoom). */
   initialView?: { center: [number, number]; zoom: number } | null;
   onViewChange?: (v: { center: [number, number]; zoom: number }) => void;
@@ -104,6 +107,8 @@ export default function Map({
   minPoints = 0,
   regionFilter = "",
   onQuick,
+  drawPoints = null,
+  onDrawClick,
   initialView = null,
   onViewChange,
   showDone = true,
@@ -116,9 +121,9 @@ export default function Map({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const readyRef = useRef(false);
   const fittedRef = useRef(false);
-  const latest = useRef({ segments, completedIds, highlightIds, planIds, partialIds, doneKeys, planKeys, track, selectedId, onSelect, onQuick, onViewChange });
+  const latest = useRef({ segments, completedIds, highlightIds, planIds, partialIds, doneKeys, planKeys, track, selectedId, onSelect, onQuick, onViewChange, drawPoints, onDrawClick });
   useEffect(() => {
-    latest.current = { segments, completedIds, highlightIds, planIds, partialIds, doneKeys, planKeys, track, selectedId, onSelect, onQuick, onViewChange };
+    latest.current = { segments, completedIds, highlightIds, planIds, partialIds, doneKeys, planKeys, track, selectedId, onSelect, onQuick, onViewChange, drawPoints, onDrawClick };
   });
 
   const fitAll = (map: maplibregl.Map, segs: MapSegment[]) => {
@@ -231,6 +236,25 @@ export default function Map({
         layout: { "line-cap": "round", "line-join": "round" },
         paint: { "line-color": "#f97316", "line-width": 10 },
       });
+      map.addSource("draw", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      });
+      map.addLayer({
+        id: "draw-line",
+        type: "line",
+        source: "draw",
+        filter: ["==", ["geometry-type"], "LineString"],
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-color": "#e11d48", "line-width": 5, "line-dasharray": [1.5, 1] },
+      });
+      map.addLayer({
+        id: "draw-pts",
+        type: "circle",
+        source: "draw",
+        filter: ["==", ["geometry-type"], "Point"],
+        paint: { "circle-radius": 5, "circle-color": "#ffffff", "circle-stroke-color": "#e11d48", "circle-stroke-width": 2 },
+      });
       map.addLayer({
         id: "seg-label",
         type: "symbol",
@@ -278,7 +302,12 @@ export default function Map({
         hover.remove();
       });
 
+      map.on("click", (e) => {
+        if (latest.current.drawPoints) latest.current.onDrawClick?.([e.lngLat.lng, e.lngLat.lat]);
+      });
+
       map.on("click", "seg-line", (e) => {
+        if (latest.current.drawPoints) return;
         const f = e.features?.[0];
         if (!f) return;
         const p = f.properties as Record<string, string | number | boolean>;
@@ -370,6 +399,23 @@ export default function Map({
       map.setLayoutProperty(id, "visibility", showTrack ? "visible" : "none");
     }
   }, [showDone, showTodo, showTrack, minPoints, regionFilter]);
+
+  // Rysowanie przebiegu.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    const pts = drawPoints ?? [];
+    (map.getSource("draw") as maplibregl.GeoJSONSource).setData({
+      type: "FeatureCollection",
+      features: [
+        ...(pts.length > 1
+          ? [{ type: "Feature" as const, properties: {}, geometry: { type: "LineString" as const, coordinates: pts } }]
+          : []),
+        ...pts.map((c) => ({ type: "Feature" as const, properties: {}, geometry: { type: "Point" as const, coordinates: c } })),
+      ],
+    });
+    map.getCanvas().style.cursor = drawPoints ? "crosshair" : "";
+  }, [drawPoints]);
 
   // Ślad aktywności.
   useEffect(() => {

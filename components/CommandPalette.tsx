@@ -22,7 +22,7 @@ export default function CommandPalette({ segments, completedIds, onPick, onClose
 
   const results = useMemo(() => {
     const nq = norm(q.trim());
-    const list = segments.filter((s) => s.geometry && (!nq || norm(`${s.name} ${s.regionName}`).includes(nq)));
+    const list = segments.filter((s) => (!nq || norm(`${s.name} ${s.regionName}`).includes(nq)));
     return list.slice(0, 12);
   }, [segments, q]);
 
@@ -71,7 +71,7 @@ export default function CommandPalette({ segments, completedIds, onPick, onClose
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">{s.name}</span>
                   <span className="text-xs text-zinc-500">
-                    {s.regionName || s.groupId} · {s.gotPointsForward}/{s.gotPointsBackward} pkt · {s.distanceKm} km
+                    {s.regionName || s.groupId} · {s.gotPointsForward}/{s.gotPointsBackward} pkt{s.geometry ? ` · ${s.distanceKm} km` : " · brak przebiegu"}
                   </span>
                 </span>
                 {completedIds.has(s.id) && <span className="text-green-600">✓</span>}

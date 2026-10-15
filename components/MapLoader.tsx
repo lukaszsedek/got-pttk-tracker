@@ -70,6 +70,8 @@ export default function MapLoader() {
   const [planMode, setPlanMode] = useState(false);
   const [editor, setEditor] = useState(false);
   const [palette, setPalette] = useState(false);
+  const [drawFor, setDrawFor] = useState<string | null>(null);
+  const [drawPts, setDrawPts] = useState<[number, number][]>([]);
   const [error, setError] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastId = useRef(0);
@@ -303,6 +305,33 @@ export default function MapLoader() {
   );
   const partialSet = useMemo(() => new Set(partial), [partial]);
 
+  const startDraw = (id: string) => {
+    setDrawFor(id);
+    setDrawPts([]);
+    setOpen(false);
+  };
+  const saveDrawn = async () => {
+    if (!drawFor || drawPts.length < 2) return;
+    try {
+      const r = await api<{ distanceKm: number }>(`/api/segments/${encodeURIComponent(drawFor)}`, send("PUT", { coordinates: drawPts }));
+      toast(`Zapisano przebieg (${r.distanceKm} km)`);
+      setDrawFor(null);
+      setDrawPts([]);
+      reload();
+    } catch (e) {
+      fail(e);
+    }
+  };
+  const clearDrawn = async (id: string) => {
+    try {
+      await api(`/api/segments/${encodeURIComponent(id)}`, { method: "DELETE" });
+      reload();
+    } catch (e) {
+      fail(e);
+    }
+  };
+  const drawing = drawFor ? (segById.get(drawFor) ?? null) : null;
+
   const mapQuick = (id: string, action: "forward" | "backward" | "plan" | "open") => {
     if (action === "forward" || action === "backward") return void complete([{ segmentId: id, direction: action }]);
     if (action === "plan") {
@@ -359,6 +388,8 @@ export default function MapLoader() {
               onUndo={(d) => undo(selected.id, d)}
               onTogglePlan={(d) => togglePlan(selected.id, d)}
               onClose={() => setSelectedId(null)}
+              onDraw={() => startDraw(selected.id)}
+              onClearDrawn={() => void clearDrawn(selected.id)}
             />
           )}
           <SegmentList
@@ -550,7 +581,51 @@ export default function MapLoader() {
                 onViewChange={(v) => saveUi({ view: v })}
                 onQuick={mapQuick}
                 onSelect={mapSelect}
+                drawPoints={drawFor ? drawPts : null}
+                onDrawClick={(p) => setDrawPts((prev) => [...prev, p])}
               />
+              {drawing && (
+                <div className="absolute top-3 left-1/2 z-20 flex w-[min(34rem,calc(100%-1.5rem))] -translate-x-1/2 flex-col gap-2 rounded-xl bg-rose-600 p-3 text-sm text-white shadow-xl">
+                  <div>
+                    <strong>Rysowanie: {drawing.name}</strong>
+                    <div className="text-xs opacity-90">
+                      Klikaj punkty wzdłuż szlaku — od początku do końca odcinka. Punktów: {drawPts.length}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setDrawPts((p) => p.slice(0, -1))}
+                      disabled={!drawPts.length}
+                      className="rounded-lg bg-white/20 px-3 py-1.5 font-medium disabled:opacity-40"
+                    >
+                      ↶ Cofnij punkt
+                    </button>
+                    <button
+                      onClick={() => setDrawPts([])}
+                      disabled={!drawPts.length}
+                      className="rounded-lg bg-white/20 px-3 py-1.5 font-medium disabled:opacity-40"
+                    >
+                      Wyczyść
+                    </button>
+                    <button
+                      onClick={() => void saveDrawn()}
+                      disabled={drawPts.length < 2}
+                      className="ml-auto rounded-lg bg-white px-3 py-1.5 font-semibold text-rose-700 disabled:opacity-50"
+                    >
+                      Zapisz przebieg
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDrawFor(null);
+                        setDrawPts([]);
+                      }}
+                      className="rounded-lg bg-white/20 px-3 py-1.5 font-medium"
+                    >
+                      Anuluj
+                    </button>
+                  </div>
+                </div>
+              )}
               <Legend
                 showDone={showDone}
                 showTodo={showTodo}

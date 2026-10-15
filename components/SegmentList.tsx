@@ -148,8 +148,8 @@ export default function SegmentList({ segments, completedIds, plannedIds, select
               return (
                 <tr
                   key={s.id}
-                  onClick={() => s.geometry && onSelect(active ? null : s.id)}
-                  className={`${s.geometry ? "cursor-pointer" : "opacity-60"} transition-colors ${
+                  onClick={() => onSelect(active ? null : s.id)}
+                  className={`cursor-pointer ${s.geometry ? "" : "opacity-70"} transition-colors ${
                     active
                       ? "bg-amber-50 dark:bg-amber-950/30"
                       : "odd:bg-white even:bg-zinc-50/60 hover:bg-zinc-100 dark:odd:bg-zinc-900 dark:even:bg-zinc-900/60 dark:hover:bg-zinc-800"
@@ -168,7 +168,7 @@ export default function SegmentList({ segments, completedIds, plannedIds, select
                     <div className="leading-snug font-medium">{s.name}</div>
                     <div className="text-xs text-zinc-500">
                       {s.regionName || s.groupId}
-                      {!s.geometry && " · brak przebiegu"}
+                      {!s.geometry && " · brak przebiegu — kliknij, aby narysować"}
                     </div>
                   </td>
                   <td className="px-2 py-2 text-right align-top whitespace-nowrap tabular-nums">

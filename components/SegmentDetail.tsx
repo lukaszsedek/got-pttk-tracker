@@ -16,11 +16,15 @@ interface Props {
   onUndo: (direction: Direction) => void;
   onTogglePlan: (direction: Direction) => void;
   onClose: () => void;
+  /** Uruchamia ręczne rysowanie przebiegu na mapie. */
+  onDraw: () => void;
+  /** Usuwa ręcznie narysowany przebieg. */
+  onClearDrawn: () => void;
 }
 
 const DIRS: Direction[] = ["forward", "backward"];
 
-export default function SegmentDetail({ segment, progress, plan, onComplete, onCompleteBoth, onPlanBoth, onUndo, onTogglePlan, onClose }: Props) {
+export default function SegmentDetail({ segment, progress, plan, onComplete, onCompleteBoth, onPlanBoth, onUndo, onTogglePlan, onClose, onDraw, onClearDrawn }: Props) {
   const [date, setDate] = useState(todayInput());
   const done = new Map(progress.filter((p) => p.segmentId === segment.id).map((p) => [key(p.segmentId, p.direction), p]));
   const planned = new Set(plan.map((p) => key(p.segmentId, p.direction)));
@@ -40,6 +44,27 @@ export default function SegmentDetail({ segment, progress, plan, onComplete, onC
         {segment.trailColor ? ` · szlak ${segment.trailColor}` : segment.unmarked ? " · bez znakowania" : ""}
         {segment.geometry ? ` · ${segment.distanceKm} km` : " · brak przebiegu na mapie"}
       </p>
+
+      {!segment.geometry ? (
+        <button
+          onClick={onDraw}
+          className="mt-3 w-full rounded-xl border border-dashed border-rose-400 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 dark:bg-rose-950/30 dark:text-rose-300"
+        >
+          ✏️ Wskaż przebieg na mapie
+        </button>
+      ) : segment.geomStatus === "manual" ? (
+        <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-rose-50 px-3 py-2 text-xs text-rose-800 dark:bg-rose-950/30 dark:text-rose-200">
+          <span>Przebieg narysowany ręcznie</span>
+          <span className="flex gap-3">
+            <button onClick={onDraw} className="underline">
+              narysuj ponownie
+            </button>
+            <button onClick={onClearDrawn} className="underline">
+              usuń
+            </button>
+          </span>
+        </div>
+      ) : null}
 
       <label className="mt-3 flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
         Data przejścia

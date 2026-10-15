@@ -3,12 +3,41 @@ services:
     image: postgis/postgis:16-3.4
     environment:
       POSTGRES_USER: got
-      POSTGRES_PASSWORD: got
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-got}
       POSTGRES_DB: got_pttk
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      # Migracje wykonują się automatycznie przy pierwszym starcie pustego wolumenu.
+      - ./db/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U got -d got_pttk"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgres://got:${DB_PASSWORD:-got}@db:5432/got_pttk
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Jednorazowe zadania (migracje/seed): docker compose run --rm tools npm run db:seed
+  tools:
+    profiles: ["tools"]
+    build:
+      context: .
+      target: build
+    environment:
+      DATABASE_URL: postgres://got:${DB_PASSWORD:-got}@db:5432/got_pttk
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   pgdata:

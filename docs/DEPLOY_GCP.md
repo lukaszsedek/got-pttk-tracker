@@ -1,5 +1,7 @@
 # Wdrożenie POC na GCP (Cloud Run + Cloud SQL PostGIS)
 
+> Plan na później. Aktualnie aplikację uruchamiamy przez `docker compose` (patrz README).
+
 Architektura: **Cloud Run** (kontener Next.js, `output: standalone`) → **Cloud SQL for PostgreSQL 16** (rozszerzenie PostGIS) przez gniazdo unixowe `/cloudsql/...`.
 
 ## 0. Zmienne

@@ -35,13 +35,21 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
-## Baza danych (PostgreSQL + PostGIS)
+## Uruchomienie (Docker Compose)
+
+Wymagany tylko Docker z wtyczką `compose` (działa w Google Cloud Shell).
 
 ```bash
-cp .env.example .env.local   # DATABASE_URL
-cp .env.example .env         # dla skryptów db:* (dotenv)
-npm run db:up                # docker compose up -d
-npm run db:migrate
-npm run db:seed              # przykładowe odcinki T.01
-npm run dev
+docker compose up -d --build                    # baza (PostGIS) + aplikacja
+docker compose run --rm tools npm run db:seed   # przykładowe odcinki T.01
 ```
+
+Aplikacja: http://localhost:8080 (w Cloud Shell: *Web Preview* → port 8080).
+
+- Migracje (`db/migrations/*.sql`) wykonują się automatycznie przy pierwszym starcie bazy.
+  Dla istniejącego wolumenu: `docker compose run --rm tools npm run db:migrate`.
+- Własne hasło bazy: `DB_PASSWORD=... docker compose up -d --build` (domyślnie `got`).
+- Logi: `docker compose logs -f app`; zatrzymanie: `docker compose down` (dodaj `-v`, by usunąć dane).
+- Baza nie jest publikowana na zewnątrz — dostępna tylko w sieci Compose.
+
+Wdrożenie na Cloud Run: [docs/DEPLOY_GCP.md](docs/DEPLOY_GCP.md) (na później).

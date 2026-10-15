@@ -2272,7 +2272,7 @@
   "regionName": "TATRY ZACHODNIE",
   "sourcePage": "tatry_zachodnie.html",
   "destination": "Polana Strążyska",
-  "origin": "wylotu Doliny Strążyskiej - Roma",
+  "origin": "Roma",
   "trailColors": [
    "Red"
   ],
@@ -2392,15 +2392,16 @@
   "groupCode": "T.02",
   "regionName": "TATRY ZACHODNIE",
   "sourcePage": "tatry_zachodnie.html",
-  "destination": "Przełęcz Białego",
+  "destination": "Doliny Białego (górne piętro)",
   "destinationElevationM": "1306",
   "trailColors": [],
   "unmarked": false,
   "pointsForward": 5,
   "pointsBackward": 2,
   "pointsRaw": "5/2",
-  "kind": "attraction",
-  "rawName": "Wylot Doliny Białego - Dolina Białego (górne piętro)"
+  "kind": "edge",
+  "rawName": "Wylot Doliny Białego - Dolina Białego (górne piętro)",
+  "origin": "Dolina Białego"
  },
  {
   "id": "tatry_zachodnie:30:1",

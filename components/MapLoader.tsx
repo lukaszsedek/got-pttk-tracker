@@ -15,7 +15,7 @@ import Toasts, { type Toast } from "@/components/Toasts";
 import { Card } from "@/components/ui";
 import { loadUi, saveUi } from "@/lib/ui-state";
 import type { MapSegment } from "@/components/Map";
-import { badgeStatus, scoreEntries } from "@/lib/badges";
+import { cycleStatus, type EarnedBadge } from "@/lib/badges";
 import { dirPoints, key } from "@/lib/booklet";
 import type { Direction, PlanItem, SegmentRow, UserTrailProgress } from "@/types/pttk";
 
@@ -68,6 +68,7 @@ export default function MapLoader() {
   const [minPoints, setMinPoints] = useState(ui.minPoints ?? 0);
   const [regionFilter, setRegionFilter] = useState(ui.region ?? "");
   const [partial, setPartial] = useState<string[]>([]);
+  const [earned, setEarned] = useState<EarnedBadge[]>([]);
   const [planMode, setPlanMode] = useState(false);
   const [editor, setEditor] = useState(false);
   const [palette, setPalette] = useState(false);
@@ -133,11 +134,13 @@ export default function MapLoader() {
       api<{ segments: SegmentRow[] }>("/api/segments"),
       api<{ progress: UserTrailProgress[] }>("/api/progress"),
       api<{ plan: PlanItem[] }>("/api/plan"),
+      api<{ badges: EarnedBadge[] }>("/api/badges"),
     ])
-      .then(([s, p, pl]) => {
+      .then(([s, p, pl, b]) => {
         setSegments(s.segments);
         setProgress(p.progress);
         setPlan(pl.plan);
+        setEarned(b.badges);
       })
       .catch((e: Error) => setError(e.message));
   }, []);
@@ -353,8 +356,59 @@ export default function MapLoader() {
       }),
     [progress, segById],
   );
-  const scored = useMemo(() => scoreEntries(entries), [entries]);
-  const badge = badgeStatus(scored.domestic, scored.foreign).current;
+  const cycle = useMemo(() => cycleStatus(entries, earned), [entries, earned]);
+  const badge = cycle.last;
+  const markVerified = async (
+    items: { segmentId: string; direction: Direction; completedAt: string }[],
+    year: number,
+  ) => {
+    try {
+      await Promise.all(items.map((i) => api("/api/progress", send("PATCH", { ...i, verifiedYear: year }))));
+      const p = await api<{ progress: UserTrailProgress[] }>("/api/progress");
+      setProgress(p.progress);
+      toast(`Oznaczono ${items.length} wpisów jako zweryfikowane w ${year}`);
+    } catch (e) {
+      fail(e);
+    }
+  };
+  const undoImport = async (activityId: string) => {
+    try {
+      const r = await api<{ deleted: number }>("/api/progress", send("DELETE", { activityId }));
+      const p = await api<{ progress: UserTrailProgress[] }>("/api/progress");
+      setProgress(p.progress);
+      toast(`Cofnięto import: ${r.deleted} wpisów`);
+    } catch (e) {
+      fail(e);
+    }
+  };
+  const setNote = async (segmentId: string, direction: Direction, note: string) => {
+    const cur = progressRef.current.find((p) => p.segmentId === segmentId && p.direction === direction);
+    if (!cur) return;
+    try {
+      await api("/api/progress", send("PATCH", { segmentId, direction, completedAt: cur.completedAt, note }));
+      setProgress((prev) =>
+        prev.map((p) => (p.segmentId === segmentId && p.direction === direction ? { ...p, note: note || undefined } : p)),
+      );
+    } catch (e) {
+      fail(e);
+    }
+  };
+  const earn = async (badgeId: string, earnedYear: number) => {
+    try {
+      await api("/api/badges", send("POST", { badgeId, earnedYear }));
+      setEarned((prev) => [...prev.filter((b) => b.badgeId !== badgeId), { badgeId, earnedYear }]);
+    } catch (e) {
+      fail(e);
+    }
+  };
+  const unearn = async (badgeId: string) => {
+    try {
+      await api("/api/badges", send("DELETE", { badgeId }));
+      setEarned((prev) => prev.filter((b) => b.badgeId !== badgeId));
+    } catch (e) {
+      fail(e);
+    }
+  };
 
   const tabs: [Tab, string, string][] = [
     ["trasy", "Trasy", "🗺️"],
@@ -413,6 +467,8 @@ export default function MapLoader() {
           onUndo={undo}
           onRestored={reload}
           onImportBooklet={() => setBookletImport(true)}
+          onVerify={markVerified}
+          onUndoImport={undoImport}
         />
       )}
       {tab === "plan" && (
@@ -420,7 +476,8 @@ export default function MapLoader() {
           plan={plan}
           segById={segById}
           currentPoints={points}
-          scored={scored}
+          entries={entries}
+          earned={earned}
           goal={goal}
           onSelect={select}
           onRemove={togglePlan}
@@ -430,7 +487,9 @@ export default function MapLoader() {
           onCompleteAll={(items, at) => complete(items.map((i) => ({ ...i, completedAt: at })))}
         />
       )}
-      {tab === "odznaki" && <BadgesPanel scored={scored} entries={entries} onSetGoal={changeGoal} />}
+      {tab === "odznaki" && (
+        <BadgesPanel entries={entries} earned={earned} onSetGoal={changeGoal} onEarn={earn} onUnearn={unearn} />
+      )}
       {tab === "import" && (
         <Card title="Import z zegarka">
           <GpxImport
@@ -468,7 +527,10 @@ export default function MapLoader() {
           <dl className="ml-auto flex items-center gap-1.5 text-center">
             <Stat label="Punkty" value={String(points)} />
             <span className="hidden sm:block">
-              <Stat label="Odznaka" value={badge ? `${badge.icon} ${badge.name}` : "—"} />
+              <Stat
+                label={cycle.ready ? "Do weryfikacji" : "Odznaka"}
+                value={cycle.ready && cycle.next ? `⏳ ${cycle.next.name}` : badge ? `${badge.icon} ${badge.name}` : "—"}
+              />
             </span>
             <span className="hidden lg:block">
               <Stat label="Zaliczone" value={`${completedIds.size}/${segments.length}`} />
@@ -655,14 +717,16 @@ export default function MapLoader() {
           onSetDate={(id, d, iso) => setDates([{ segmentId: id, direction: d }], iso)}
           onSetDates={setDates}
           onUndo={undo}
+          onNote={setNote}
           onClose={() => setEditor(false)}
         />
       )}
       {bookletImport && segments && (
         <BookletImport
           segments={segments}
+          doneKeys={doneKeys}
           onImport={async (items) => {
-            await complete(items, undefined, true);
+            await complete(items, `booklet:${new Date().toISOString().slice(0, 16)}`, true);
             toast(`Zaimportowano ${items.length} wpisów do książeczki`);
           }}
           onClose={() => setBookletImport(false)}

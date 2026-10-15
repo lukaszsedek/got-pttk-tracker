@@ -7,6 +7,8 @@ import type { Direction, SegmentRow } from "@/types/pttk";
 
 interface Props {
   segments: SegmentRow[];
+  /** Klucze "<id>|<kierunek>" już zaliczonych odcinków. */
+  doneKeys: ReadonlySet<string>;
   onImport: (items: { segmentId: string; direction: Direction; completedAt: string; verifiedYear?: number }[]) => Promise<void> | void;
   onClose: () => void;
 }
@@ -25,7 +27,7 @@ const EXAMPLE = `12.06.2021; Murowanica – Nosal; 4
 2021-07-03 Morskie Oko - Czarny Staw nad Morskim Okiem
 15.08.2022 Wyżnia Dolina Chochołowska – Schronisko na Polanie Chochołowskiej 2`;
 
-export default function BookletImport({ segments, onImport, onClose }: Props) {
+export default function BookletImport({ segments, doneKeys, onImport, onClose }: Props) {
   const [text, setText] = useState("");
   const [rows, setRows] = useState<Row[] | null>(null);
   const [defDate, setDefDate] = useState(todayInput());
@@ -44,7 +46,8 @@ export default function BookletImport({ segments, onImport, onClose }: Props) {
     );
   };
 
-  const accepted = (rows ?? []).filter((r) => r.pick >= 0 && r.cands[r.pick]);
+  const isDone = (r: Row) => r.pick >= 0 && !!r.cands[r.pick] && doneKeys.has(`${r.cands[r.pick].segment.id}|${r.direction}`);
+  const accepted = (rows ?? []).filter((r) => r.pick >= 0 && r.cands[r.pick] && !isDone(r));
   const points = accepted.reduce((a, r) => {
     const s = r.cands[r.pick].segment;
     return a + (r.direction === "forward" ? s.gotPointsForward : s.gotPointsBackward);
@@ -201,6 +204,7 @@ export default function BookletImport({ segments, onImport, onClose }: Props) {
                               </option>
                             ))}
                           </select>
+                          {isDone(r) && <div className="mt-1 text-xs text-sky-700 dark:text-sky-300">Już w książeczce — zostanie pominięty.</div>}
                           {!r.cands.length && <div className="mt-1 text-xs text-amber-700 dark:text-amber-300">Brak dopasowania — dodaj ręcznie w Edytorze tras.</div>}
                         </td>
                         <td className="px-2 py-2 align-top">

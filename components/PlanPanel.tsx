@@ -3,15 +3,15 @@
 import { useMemo, useState } from "react";
 import { Card } from "@/components/ui";
 import { dateInputToIso, dirPoints, directionLabel, key, todayInput } from "@/lib/booklet";
-import { badgeStatus } from "@/lib/badges";
-import type { scoreEntries } from "@/lib/badges";
+import { cycleStatus, type EarnedBadge, type ScoreEntry } from "@/lib/badges";
 import type { Direction, PlanItem, SegmentRow } from "@/types/pttk";
 
 interface Props {
   plan: PlanItem[];
   segById: ReadonlyMap<string, SegmentRow>;
   currentPoints: number;
-  scored: ReturnType<typeof scoreEntries>;
+  entries: ScoreEntry[];
+  earned: EarnedBadge[];
   goal: number;
   onSelect: (segmentId: string) => void;
   onRemove: (segmentId: string, direction: Direction) => void;
@@ -22,7 +22,7 @@ interface Props {
   onCompleteAll: (items: { segmentId: string; direction: Direction }[], completedAtIso: string) => void;
 }
 
-export default function PlanPanel({ plan, segById, currentPoints, scored, goal, onSelect, onRemove, onToggle, planMode, onPlanMode, onCompleteAll }: Props) {
+export default function PlanPanel({ plan, segById, currentPoints, entries, earned, goal, onSelect, onRemove, onToggle, planMode, onPlanMode, onCompleteAll }: Props) {
   const [date, setDate] = useState(todayInput());
 
   const items = useMemo(
@@ -41,7 +41,13 @@ export default function PlanPanel({ plan, segById, currentPoints, scored, goal, 
   const after = currentPoints + points;
   const gain = items.reduce((a, i) => a + (i.s.geometry ? i.s.elevationGainM : 0), 0);
   const hours = Math.round(((km / 4 + gain / 400) * 10)) / 10; // ok. 4 km/h + 400 m/h w górę
-  const badge = badgeStatus(scored.domestic + points, scored.foreign).current;
+  const planEntries = useMemo<ScoreEntry[]>(
+    () =>
+      items.map((i) => ({ day: todayInput(), points: i.points, foreign: i.s.groupId.startsWith("SK-") })),
+    [items],
+  );
+  const before = useMemo(() => cycleStatus(entries, earned), [entries, earned]);
+  const afterSt = useMemo(() => cycleStatus([...entries, ...planEntries], earned), [entries, earned, planEntries]);
   const clear = () => items.forEach((i) => onRemove(i.p.segmentId, i.p.direction));
 
   return (
@@ -132,9 +138,10 @@ export default function PlanPanel({ plan, segById, currentPoints, scored, goal, 
                 {after} pkt{goal > 0 ? ` / ${goal}` : ""}
               </strong>
             </div>
-            {badge && (
+            {afterSt.next && (
               <div className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-                Odznaka po realizacji: {badge.icon} {badge.name}
+                {afterSt.next.name}: {afterSt.have}/{afterSt.need} pkt
+                {afterSt.ready && !before.ready ? " — plan spełnia normę ✓" : ""}
               </div>
             )}
           </div>

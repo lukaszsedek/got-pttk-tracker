@@ -74,20 +74,73 @@ export function scoreEntries(entries: ScoreEntry[]) {
   };
 }
 
-/** Punkty zaliczane do progu `threshold`: zagraniczne najwyżej 50% progu. */
-export function countedFor(domestic: number, foreign: number, badge: Badge) {
-  return domestic + (badge.foreignCapped ? Math.min(foreign, Math.floor(badge.norm / 2)) : foreign);
+export interface EarnedBadge {
+  badgeId: string;
+  earnedYear: number;
 }
 
-export function badgeStatus(domestic: number, foreign = 0) {
-  // Zagraniczne ograniczamy względem skumulowanego progu (przybliżenie §7.2).
-  const counted = (b: Badge) =>
-    domestic + (b.foreignCapped ? Math.min(foreign, Math.floor(b.points / 2)) : foreign);
-  const earned = BADGES.filter((b) => counted(b) >= b.points);
-  const current = earned[earned.length - 1] ?? null;
-  const next = BADGES.find((b) => counted(b) < b.points) ?? null;
-  const have = next ? counted(next) : domestic + foreign;
-  const prevPts = current?.points ?? 0;
-  const pct = next ? ((have - prevPts) / (next.points - prevPts)) * 100 : 100;
-  return { earned, current, next, have, pct: Math.max(0, Math.min(100, pct)) };
+export interface DayWarning {
+  day: string;
+  points: number;
+  lost: number;
+}
+
+const yearOf = (e: ScoreEntry) => Number(e.day.slice(0, 4));
+
+/**
+ * Stan cyklu odznak z uwzględnieniem już zdobytych stopni (§8, §12):
+ * punkty z lat do roku zdobycia ostatniego stopnia dają nadwyżkę (≤ 50% następnej normy),
+ * punkty z późniejszych lat liczą się w całości. Zagraniczne ≤ 50% normy (§7.2).
+ */
+export function cycleStatus(entries: ScoreEntry[], earned: EarnedBadge[]) {
+  const ids = new Set(earned.map((e) => e.badgeId));
+  let k = -1;
+  BADGES.forEach((b, i) => {
+    if (ids.has(b.id)) k = i;
+  });
+  const last = k >= 0 ? BADGES[k] : null;
+  const lastYear = last ? (earned.find((e) => e.badgeId === last.id)?.earnedYear ?? null) : null;
+  const next = BADGES[k + 1] ?? null;
+  const all = scoreEntries(entries);
+  const half = next ? Math.floor(next.norm / 2) : 0;
+
+  let have: number;
+  if (!last || lastYear === null) {
+    have = all.domestic + Math.min(all.foreign, half);
+  } else {
+    const before = scoreEntries(entries.filter((e) => yearOf(e) <= lastYear));
+    const after = scoreEntries(entries.filter((e) => yearOf(e) > lastYear));
+    const surplus = Math.max(0, before.domestic + before.foreign - last.points);
+    have = Math.min(surplus, half) + after.domestic + Math.min(after.foreign, half);
+  }
+  const need = next?.norm ?? 0;
+  const ready = !!next && have >= need;
+  // Najwcześniejszy rok weryfikacji: jeden stopień na rok (wyjątek: popularna → mała brązowa).
+  let earliestYear: number | null = null;
+  if (last && lastYear !== null) {
+    const sameYearOk = last.id === "popularna" && next?.id === "mala-brazowa";
+    earliestYear = sameYearOk ? lastYear : lastYear + 1;
+  }
+  return {
+    all,
+    last,
+    lastYear,
+    next,
+    have,
+    need,
+    ready,
+    pct: next ? Math.max(0, Math.min(100, (have / need) * 100)) : 100,
+    earliestYear,
+    earnedList: BADGES.filter((b) => ids.has(b.id)),
+  };
+}
+
+/** Dni z przekroczonym limitem dziennym (§6.3). */
+export function dayWarnings(entries: ScoreEntry[]): DayWarning[] {
+  const m = new Map<string, number>();
+  for (const e of entries) m.set(e.day, (m.get(e.day) ?? 0) + e.points);
+  return [...m]
+    .filter(([, p]) => p > MAX_PER_DAY)
+    .map(([day, points]) => ({ day, points, lost: points - MAX_PER_DAY }))
+    .sort((a, b) => a.day.localeCompare(b.day));
 }

@@ -10,7 +10,7 @@
     "db:migrate": "tsx scripts/db.ts migrate",
     "db:seed": "tsx scripts/db.ts seed",
     "scrape:got": "tsx scripts/scrape-got.ts",
-    "test": "tsx --test lib/got/geometry.test.ts",
+    "test": "tsx --test lib/got/geometry.test.ts lib/badges.test.ts lib/booklet-import.test.ts",
     "build:geometry": "tsx scripts/build-geometry.ts",
     "db:import-got": "tsx scripts/import-got.ts",
     "build:tatry": "bash scripts/build-tatry.sh"

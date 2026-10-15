@@ -16,9 +16,13 @@ interface Props {
   onRestored: () => void;
   /** Otwiera import istniejącej książeczki. */
   onImportBooklet: () => void;
+  /** Oznacza wpisy jako zweryfikowane w danym roku. */
+  onVerify: (items: { segmentId: string; direction: "forward" | "backward"; completedAt: string }[], year: number) => void;
+  /** Cofa cały import (wszystkie wpisy z danego źródła). */
+  onUndoImport: (activityId: string) => void;
 }
 
-export default function BookletPanel({ progress, segById, goal, onGoalChange, onSelect, onUndo, onRestored, onImportBooklet }: Props) {
+export default function BookletPanel({ progress, segById, goal, onGoalChange, onSelect, onUndo, onRestored, onImportBooklet, onVerify, onUndoImport }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [restoreMsg, setRestoreMsg] = useState<string | null>(null);
   const restore = async (file: File) => {
@@ -58,6 +62,28 @@ export default function BookletPanel({ progress, segById, goal, onGoalChange, on
     return [...m].sort((a, b) => b[1].points - a[1].points);
   }, [rows]);
 
+  const unverified = rows.filter((r) => !r.p.verifiedYear);
+  const [verifyYear, setVerifyYear] = useState(new Date().getFullYear());
+  const imports = useMemo(() => {
+    const m = new Map<string, { id: string; label: string; n: number; points: number; date: string }>();
+    for (const r of rows) {
+      const id = r.p.sourceActivityId;
+      if (!id) continue;
+      const cur = m.get(id) ?? {
+        id,
+        label: id.startsWith("booklet:") ? "Import książeczki" : id.split(":")[0].replace(/#\d+$/, ""),
+        n: 0,
+        points: 0,
+        date: r.p.completedAt,
+      };
+      cur.n += 1;
+      cur.points += r.points;
+      if (r.p.completedAt > cur.date) cur.date = r.p.completedAt;
+      m.set(id, cur);
+    }
+    return [...m.values()].sort((a, b) => b.date.localeCompare(a.date));
+  }, [rows]);
+
   const pct = goal > 0 ? Math.min(100, (total / goal) * 100) : 0;
 
   const exportCsv = () => {
@@ -76,9 +102,11 @@ export default function BookletPanel({ progress, segById, goal, onGoalChange, on
     downloadText("ksiazeczka-got.csv", toCsv([head, ...body, [], ["", "", "", "Razem", total, "", ""]]));
   };
 
-  const printBooklet = () => {
+  const printBooklet = (only: "all" | "unverified" = "all") => {
     const esc = (v: string | number) => String(v).replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
-    const body = [...rows]
+    const list = only === "unverified" ? rows.filter((r) => !r.p.verifiedYear) : rows;
+    const sum = list.reduce((a, r) => a + r.points, 0);
+    const body = [...list]
       .sort((a, b) => a.p.completedAt.localeCompare(b.p.completedAt))
       .map(
         (r, i) =>
@@ -94,9 +122,9 @@ export default function BookletPanel({ progress, segById, goal, onGoalChange, on
 table{border-collapse:collapse;width:100%;margin-top:12px}th,td{border:1px solid #888;padding:5px 7px;text-align:left}
 th{background:#eee}.n{text-align:right}.stamp{width:110px}tfoot td{font-weight:700}
 @media print{body{margin:10mm}}</style></head><body>
-<h1>Książeczka GOT PTTK</h1><div>Wygenerowano: ${new Date().toLocaleDateString("pl-PL")} · wpisów: ${rows.length}</div>
+<h1>Książeczka GOT PTTK${only === "unverified" ? " — do weryfikacji" : ""}</h1><div>Wygenerowano: ${new Date().toLocaleDateString("pl-PL")} · wpisów: ${list.length}</div>
 <table><thead><tr><th>Lp.</th><th>Data</th><th>Region</th><th>Odcinek</th><th>Pkt</th><th>Pieczątka</th></tr></thead>
-<tbody>${body}</tbody><tfoot><tr><td colspan="4">Razem</td><td class="n">${total}</td><td></td></tr></tfoot></table>
+<tbody>${body}</tbody><tfoot><tr><td colspan="4">Razem</td><td class="n">${sum}</td><td></td></tr></tfoot></table>
 <script>window.onload=()=>window.print()</script></body></html>`);
     w.document.close();
   };
@@ -143,7 +171,7 @@ th{background:#eee}.n{text-align:right}.stamp{width:110px}tfoot td{font-weight:7
           Importuj istniejącą książeczkę…
         </button>
         <button
-          onClick={printBooklet}
+          onClick={() => printBooklet("all")}
           disabled={!rows.length}
           className="mt-2 w-full rounded-xl border border-zinc-300 py-2 text-sm font-medium disabled:opacity-40 dark:border-zinc-700"
         >
@@ -177,6 +205,74 @@ th{background:#eee}.n{text-align:right}.stamp{width:110px}tfoot td{font-weight:7
         </div>
         {restoreMsg && <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">{restoreMsg}</p>}
       </Card>
+
+      {rows.length > 0 && (
+        <Card title="Weryfikacja książeczki">
+          <p className="text-sm">
+            Niezweryfikowane: <strong>{unverified.length}</strong> wpisów ·{" "}
+            <strong>{unverified.reduce((a, r) => a + r.points, 0)}</strong> pkt
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+            <label className="flex items-center gap-1.5">
+              Rok
+              <input
+                type="number"
+                value={verifyYear}
+                onChange={(e) => setVerifyYear(Number(e.target.value))}
+                className="w-20 rounded-lg border px-2 py-1"
+              />
+            </label>
+            <button
+              disabled={!unverified.length}
+              onClick={() =>
+                onVerify(
+                  unverified.map((r) => ({
+                    segmentId: r.p.segmentId,
+                    direction: r.p.direction,
+                    completedAt: r.p.completedAt,
+                  })),
+                  verifyYear,
+                )
+              }
+              className="rounded-lg bg-green-600 px-3 py-1.5 font-semibold text-white disabled:opacity-40"
+            >
+              Oznacz jako zweryfikowane
+            </button>
+            <button
+              disabled={!unverified.length}
+              onClick={() => printBooklet("unverified")}
+              className="rounded-lg border border-zinc-300 px-3 py-1.5 disabled:opacity-40 dark:border-zinc-700"
+            >
+              Drukuj do weryfikacji
+            </button>
+          </div>
+        </Card>
+      )}
+
+      {imports.length > 0 && (
+        <Card title="Importy">
+          <ul className="flex flex-col divide-y divide-zinc-100 text-sm dark:divide-zinc-800">
+            {imports.map((im) => (
+              <li key={im.id} className="flex items-center gap-2 py-2">
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">{im.label}</span>
+                  <span className="text-xs text-zinc-500">
+                    {im.n} wpisów · {im.points} pkt · {formatDate(im.date)}
+                  </span>
+                </span>
+                <button
+                  onClick={() => {
+                    if (confirm(`Cofnąć import „${im.label}” (${im.n} wpisów)?`)) onUndoImport(im.id);
+                  }}
+                  className="shrink-0 rounded-lg border border-zinc-300 px-2.5 py-1 text-xs dark:border-zinc-700"
+                >
+                  Cofnij import
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {byRegion.length > 0 && (
         <Card title="Punkty wg regionów">
@@ -226,6 +322,7 @@ th{background:#eee}.n{text-align:right}.stamp{width:110px}tfoot td{font-weight:7
                           {p.sourceActivityId ? " · GPX" : " · ręcznie"}
                           {p.verifiedYear ? ` · zweryf. ${p.verifiedYear}` : ""}
                         </span>
+                        {p.note && <span className="mt-0.5 block text-xs break-words text-zinc-600 italic dark:text-zinc-400">{p.note}</span>}
                       </button>
                     </td>
                     <td className="px-2 py-2 text-right align-top font-semibold tabular-nums">{points}</td>

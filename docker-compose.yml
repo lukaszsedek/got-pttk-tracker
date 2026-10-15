@@ -21,6 +21,10 @@ services:
     build: .
     environment:
       DATABASE_URL: postgres://got:${DB_PASSWORD:-got}@db:5432/got_pttk
+      BACKUP_DIR: /app/backups
+    volumes:
+      # Automatyczne kopie zaliczeń (raz na godzinę po zmianach). Wymaga: mkdir -p backups && chmod a+w backups
+      - ./backups:/app/backups
     ports:
       - "8080:8080"
     depends_on:

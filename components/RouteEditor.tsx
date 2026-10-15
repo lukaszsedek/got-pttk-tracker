@@ -11,6 +11,7 @@ interface Props {
   onSetDate: (segmentId: string, direction: Direction, isoDate: string) => Promise<void> | void;
   onSetDates: (items: { segmentId: string; direction: Direction }[], isoDate: string) => Promise<void> | void;
   onUndo: (segmentId: string, direction: Direction) => void;
+  onNote: (segmentId: string, direction: Direction, note: string) => void;
   onClose: () => void;
 }
 
@@ -18,7 +19,7 @@ const PAGE = 150;
 const norm = (s: string) =>
   s.toLowerCase().replace(/ł/g, "l").normalize("NFD").replace(/[̀-ͯ]/g, "");
 
-export default function RouteEditor({ segments, progress, onSetDate, onSetDates, onUndo, onClose }: Props) {
+export default function RouteEditor({ segments, progress, onSetDate, onSetDates, onUndo, onNote, onClose }: Props) {
   const [q, setQ] = useState("");
   const [region, setRegion] = useState("");
   const [status, setStatus] = useState<"all" | "done" | "todo">("all");
@@ -165,6 +166,7 @@ export default function RouteEditor({ segments, progress, onSetDate, onSetDates,
               <th className="px-2 py-2.5 text-right font-semibold">Pkt</th>
               <th className="px-2 py-2.5 text-right font-semibold">Km</th>
               <th className="px-2 py-2.5 font-semibold">Data przejścia</th>
+              <th className="px-2 py-2.5 font-semibold">Notatka</th>
               <th className="px-2 py-2.5 font-semibold">Źródło</th>
               <th className="w-20 py-2.5 pr-3" />
             </tr>
@@ -196,8 +198,20 @@ export default function RouteEditor({ segments, progress, onSetDate, onSetDates,
                       className={`rounded-lg border px-2 py-1 text-sm ${p ? "border-green-500" : ""}`}
                     />
                   </td>
+                  <td className="px-2 py-1.5">
+                    {p && (
+                      <input
+                        defaultValue={p.note ?? ""}
+                        key={`${k}-${p.note ?? ""}`}
+                        placeholder="notatka, link…"
+                        onBlur={(e) => e.target.value !== (p.note ?? "") && onNote(s.id, d, e.target.value)}
+                        className="w-44 rounded-lg border px-2 py-1 text-sm"
+                      />
+                    )}
+                  </td>
                   <td className="px-2 py-2 text-xs text-zinc-500">
-                    {p ? (p.sourceActivityId ? "GPX" : "ręcznie") : ""}
+                    {p ? (p.sourceActivityId?.startsWith("booklet:") ? "książeczka" : p.sourceActivityId ? "GPX" : "ręcznie") : ""}
+                    {p?.verifiedYear ? ` · zweryf. ${p.verifiedYear}` : ""}
                   </td>
                   <td className="py-2 pr-3 text-right whitespace-nowrap">
                     {p ? (
@@ -218,7 +232,7 @@ export default function RouteEditor({ segments, progress, onSetDate, onSetDates,
             })}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={9} className="py-10 text-center text-zinc-500">
+                <td colSpan={10} className="py-10 text-center text-zinc-500">
                   Brak pozycji dla wybranych filtrów.
                 </td>
               </tr>

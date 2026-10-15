@@ -39,6 +39,7 @@ export interface UserTrailProgress {
   sourceActivityId?: string;
   /** Rok weryfikacji wpisu w książeczce (komisja GOT). */
   verifiedYear?: number;
+  note?: string;
 }
 
 /** Punkt śladu GPX po wstępnej obróbce. */

@@ -6,7 +6,8 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-got}
       POSTGRES_DB: got_pttk
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      # Bind mount w katalogu projektu (Cloud Shell zachowuje tylko $HOME).
+      - ./.pgdata:/var/lib/postgresql/data
       # Migracje wykonują się automatycznie przy pierwszym starcie pustego wolumenu.
       - ./db/migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
@@ -42,6 +43,3 @@ services:
     depends_on:
       db:
         condition: service_healthy
-
-volumes:
-  pgdata:

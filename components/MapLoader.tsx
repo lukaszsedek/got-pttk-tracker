@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import BadgesPanel from "@/components/BadgesPanel";
 import BookletPanel from "@/components/BookletPanel";
 import GpxImport from "@/components/GpxImport";
+import RouteEditor from "@/components/RouteEditor";
 import PlanPanel from "@/components/PlanPanel";
 import SegmentDetail from "@/components/SegmentDetail";
 import SegmentList from "@/components/SegmentList";
@@ -59,6 +60,7 @@ export default function MapLoader() {
   const [showTodo, setShowTodo] = useState(true);
   const [showTrack, setShowTrack] = useState(true);
   const [planMode, setPlanMode] = useState(false);
+  const [editor, setEditor] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -111,6 +113,26 @@ export default function MapLoader() {
       fail(e);
     }
   }, []);
+
+  /** Ustawia datę przejścia: aktualizuje istniejące zaliczenie albo tworzy nowe. */
+  const setDates = useCallback(
+    async (items: { segmentId: string; direction: Direction }[], iso: string) => {
+      try {
+        const have = new Set(progress.map((p) => key(p.segmentId, p.direction)));
+        const fresh = items.filter((i) => !have.has(key(i.segmentId, i.direction)));
+        const existing = items.filter((i) => have.has(key(i.segmentId, i.direction)));
+        if (fresh.length) {
+          await api("/api/progress", send("POST", { completions: fresh.map((i) => ({ ...i, completedAt: iso })) }));
+        }
+        await Promise.all(existing.map((i) => api("/api/progress", send("PATCH", { ...i, completedAt: iso }))));
+        const p = await api<{ progress: UserTrailProgress[] }>("/api/progress");
+        setProgress(p.progress);
+      } catch (e) {
+        fail(e);
+      }
+    },
+    [progress],
+  );
 
   const togglePlan = useCallback(
     async (segmentId: string, direction: Direction) => {
@@ -203,7 +225,13 @@ export default function MapLoader() {
           </div>
         </div>
         {segments && (
-          <dl className="flex gap-2 text-center">
+          <dl className="flex items-center gap-2 text-center">
+            <button
+              onClick={() => setEditor(true)}
+              className="mr-1 rounded-xl bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700"
+            >
+              ✎ Edytor tras (pełny ekran)
+            </button>
             <Stat label="Punkty GOT" value={String(points)} />
             <Stat label="Odznaka" value={badge ? `${badge.icon} ${badge.name}` : "—"} />
             <Stat label="Zaliczone odcinki" value={`${completedIds.size}/${segments.length}`} />
@@ -211,6 +239,17 @@ export default function MapLoader() {
           </dl>
         )}
       </header>
+
+      {editor && segments && (
+        <RouteEditor
+          segments={segments}
+          progress={progress}
+          onSetDate={(id, d, iso) => setDates([{ segmentId: id, direction: d }], iso)}
+          onSetDates={setDates}
+          onUndo={undo}
+          onClose={() => setEditor(false)}
+        />
+      )}
 
       {notice && (
         <div className="flex items-center justify-between bg-red-50 px-5 py-2 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">

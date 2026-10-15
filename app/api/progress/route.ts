@@ -79,3 +79,30 @@ export async function DELETE(request: Request) {
     return Response.json({ error: (e as Error).message }, { status: 500 });
   }
 }
+
+/** Zmienia datę przejścia istniejącego zaliczenia. */
+export async function PATCH(request: Request) {
+  const { segmentId, direction, completedAt } = (await request.json()) as {
+    segmentId?: string;
+    direction?: unknown;
+    completedAt?: string;
+  };
+  if (
+    typeof segmentId !== "string" ||
+    !isDir(direction) ||
+    typeof completedAt !== "string" ||
+    Number.isNaN(Date.parse(completedAt))
+  ) {
+    return Response.json({ error: "Wymagane: segmentId, direction, completedAt" }, { status: 400 });
+  }
+  try {
+    const { rowCount } = await getPool().query(
+      `UPDATE user_trail_progress SET completed_at = $4::timestamptz
+        WHERE user_id = $1 AND segment_id = $2 AND direction = $3`,
+      [DEFAULT_USER_ID, segmentId, direction, completedAt],
+    );
+    return Response.json({ updated: rowCount });
+  } catch (e) {
+    return Response.json({ error: (e as Error).message }, { status: 500 });
+  }
+}

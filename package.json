@@ -9,7 +9,10 @@
     "lint": "eslint",
     "db:migrate": "tsx scripts/db.ts migrate",
     "db:seed": "tsx scripts/db.ts seed",
-    "scrape:got": "tsx scripts/scrape-got.ts"
+    "scrape:got": "tsx scripts/scrape-got.ts",
+    "test": "tsx --test lib/got/geometry.test.ts",
+    "build:geometry": "tsx scripts/build-geometry.ts",
+    "db:import-got": "tsx scripts/import-got.ts"
   },
   "dependencies": {
     "@turf/turf": "^7.4.0",

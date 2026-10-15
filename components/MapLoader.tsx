@@ -31,18 +31,29 @@ export default function MapLoader() {
   const [done, setDone] = useState<Done[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [groups, setGroups] = useState<{ id: string; segments: number }[]>([]);
+  const [group, setGroup] = useState("T.01");
 
+  // Lista grup i postęp — raz.
   useEffect(() => {
     Promise.all([
-      getJson<{ segments: PttkSegment[] }>("/api/segments?group=T.01"),
+      getJson<{ groups: { id: string; segments: number }[] }>("/api/groups"),
       getJson<{ progress: UserTrailProgress[] }>("/api/progress"),
     ])
-      .then(([s, p]) => {
-        setSegments(s.segments);
+      .then(([g, p]) => {
+        setGroups(g.groups);
+        if (g.groups.length && !g.groups.some((x) => x.id === "T.01")) setGroup(g.groups[0].id);
         setDone(p.progress.map((x) => ({ segmentId: x.segmentId, direction: x.direction })));
       })
       .catch((e: Error) => setError(e.message));
   }, []);
+
+  // Odcinki wybranej grupy.
+  useEffect(() => {
+    getJson<{ segments: PttkSegment[] }>(`/api/segments?group=${encodeURIComponent(group)}`)
+      .then((s) => setSegments(s.segments))
+      .catch((e: Error) => setError(e.message));
+  }, [group]);
 
   const completedIds = useMemo(() => new Set(done.map((d) => d.segmentId)), [done]);
 
@@ -83,8 +94,25 @@ export default function MapLoader() {
           </span>
           <div>
             <h1 className="text-lg leading-tight font-bold">GOT PTTK Tracker</h1>
-            <p className="text-xs text-zinc-500">Grupa T.01 · Tatry</p>
+            <p className="text-xs text-zinc-500">Grupa {group}</p>
           </div>
+          {groups.length > 1 && (
+            <select
+              value={group}
+              onChange={(e) => {
+                setSelectedId(null);
+                setGroup(e.target.value);
+              }}
+              className="ml-2 rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              aria-label="Grupa GOT"
+            >
+              {groups.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.id} ({g.segments})
+                </option>
+              ))}
+            </select>
+          )}
         </div>
         {stats && segments && (
           <dl className="flex gap-2 text-center">

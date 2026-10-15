@@ -79,7 +79,7 @@ export function matchActivity(
   const track = simplifyTrack(denoise(pts, clean), clean.simplifyToleranceM ?? 3);
   const matches: SegmentMatch[] = [];
   const coverages: { segmentId: string; coverage: number }[] = [];
-  if (track.length < 2) return { activityId: activity.id, matches, newSegments: 0, totalGotPoints: 0 };
+  if (track.length < 2) return { activityId: activity.id, startedAt: activity.startedAt, matches, newSegments: 0, totalGotPoints: 0 };
 
   const proj = makeProjector(track[0].lat, track[0].lng);
   const trackXY: XY[] = track.map((p) => proj(p.lat, p.lng));
@@ -155,6 +155,7 @@ export function matchActivity(
   const fresh = matches.filter((m) => !m.alreadyCompleted && !m.partial);
   return {
     activityId: activity.id,
+    startedAt: activity.startedAt,
     matches,
     newSegments: new Set(fresh.map((m) => m.segmentId)).size,
     totalGotPoints: fresh.reduce((s, m) => s + m.gotPoints, 0),

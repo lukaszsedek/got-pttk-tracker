@@ -85,7 +85,7 @@ const bb = ([s, w, n, e]: BBox) => `${s},${w},${n},${e}`;
 
 export const featuresQuery = (b: BBox) => `[out:json][timeout:180];
 (
-  node["name"]["natural"~"^(peak|saddle|spring|cave_entrance|hot_spring|rock|stone|waterfall|tree)$"](${bb(b)});
+  node["name"]["natural"](${bb(b)});
   node["name"]["tourism"~"^(alpine_hut|wilderness_hut|viewpoint|camp_site|information|attraction|hostel|hotel|guest_house|museum)$"](${bb(b)});
   node["name"]["place"](${bb(b)});
   node["name"]["mountain_pass"](${bb(b)});
@@ -94,7 +94,8 @@ export const featuresQuery = (b: BBox) => `[out:json][timeout:180];
   node["name"]["highway"~"^(bus_stop|trailhead)$"](${bb(b)});
   node["name"]["historic"](${bb(b)});
   node["name"]["waterway"~"^(waterfall|dam)$"](${bb(b)});
-  way["name"]["natural"~"^(valley|ridge|peak|water|bare_rock|cliff|gorge|saddle|wetland|scree|glacier)$"](${bb(b)});
+  way["name"]["natural"](${bb(b)});
+  way["name"]["landuse"~"^(meadow|grass|recreation_ground|farmland|forest|cemetery)$"](${bb(b)});
   way["name"]["place"](${bb(b)});
   way["name"]["tourism"~"^(alpine_hut|camp_site|attraction|viewpoint)$"](${bb(b)});
   way["name"]["leisure"~"^(park|nature_reserve)$"](${bb(b)});

@@ -71,6 +71,8 @@ export interface SegmentMatch {
 export interface MatchSummary {
   activityId: string;
   matches: SegmentMatch[];
+  /** Data rozpoczęcia aktywności (do wpisu w książeczce). */
+  startedAt?: string;
   newSegments: number;
   totalGotPoints: number;
   /** Diagnostyka: statystyki śladu i pokrycie każdego odcinka (także niedopasowanych). */
@@ -102,3 +104,10 @@ export type MatchableSegment = Pick<
   PttkSegment,
   "id" | "geometry" | "gotPointsForward" | "gotPointsBackward"
 >;
+
+/** Pozycja planu: odcinek + kierunek, który chcemy przejść. */
+export interface PlanItem {
+  segmentId: string;
+  direction: Direction;
+  addedAt: string;
+}

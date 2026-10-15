@@ -7,6 +7,7 @@ import type { SegmentRow } from "@/types/pttk";
 interface Props {
   segments: SegmentRow[];
   completedIds: ReadonlySet<string>;
+  plannedIds: ReadonlySet<string>;
   selectedId: string | null;
   onSelect: (id: string | null) => void;
 }
@@ -20,10 +21,12 @@ const norm = (s: string) =>
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "");
 
-export default function SegmentList({ segments, completedIds, selectedId, onSelect }: Props) {
+export default function SegmentList({ segments, completedIds, plannedIds, selectedId, onSelect }: Props) {
   const [q, setQ] = useState("");
   const [region, setRegion] = useState("");
   const [onlyMapped, setOnlyMapped] = useState(true);
+  const [status, setStatus] = useState<"all" | "todo" | "done" | "planned">("all");
+  const [sort, setSort] = useState<"default" | "points" | "km">("default");
   const [limit, setLimit] = useState(PAGE);
 
   const regions = useMemo(() => {
@@ -34,13 +37,23 @@ export default function SegmentList({ segments, completedIds, selectedId, onSele
 
   const filtered = useMemo(() => {
     const nq = norm(q.trim());
-    return segments.filter(
+    const list = segments.filter(
       (s) =>
         (!onlyMapped || s.geometry) &&
         (!region || (s.regionName || s.groupId) === region) &&
+        (status === "all" ||
+          (status === "done" && completedIds.has(s.id)) ||
+          (status === "todo" && !completedIds.has(s.id)) ||
+          (status === "planned" && plannedIds.has(s.id))) &&
         (!nq || norm(`${s.name} ${s.regionName}`).includes(nq)),
     );
-  }, [segments, q, region, onlyMapped]);
+    if (sort === "points") {
+      list.sort((a, b) => Math.max(b.gotPointsForward, b.gotPointsBackward) - Math.max(a.gotPointsForward, a.gotPointsBackward));
+    } else if (sort === "km") {
+      list.sort((a, b) => b.distanceKm - a.distanceKm);
+    }
+    return list;
+  }, [segments, q, region, onlyMapped, status, sort, completedIds, plannedIds]);
 
   const mapped = segments.filter((s) => s.geometry).length;
 
@@ -75,6 +88,32 @@ export default function SegmentList({ segments, completedIds, selectedId, onSele
             </option>
           ))}
         </select>
+        <div className="flex gap-2">
+          <select
+            value={status}
+            onChange={(e) => {
+              setStatus(e.target.value as typeof status);
+              setLimit(PAGE);
+            }}
+            className="min-w-0 flex-1 rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-sm dark:border-zinc-700"
+            aria-label="Status"
+          >
+            <option value="all">Wszystkie</option>
+            <option value="todo">Do zrobienia</option>
+            <option value="done">Zaliczone</option>
+            <option value="planned">W planie</option>
+          </select>
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as typeof sort)}
+            className="min-w-0 flex-1 rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-sm dark:border-zinc-700"
+            aria-label="Sortowanie"
+          >
+            <option value="default">Sortuj: region</option>
+            <option value="points">Sortuj: punkty ↓</option>
+            <option value="km">Sortuj: dystans ↓</option>
+          </select>
+        </div>
         <label className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
           <input type="checkbox" checked={onlyMapped} onChange={(e) => setOnlyMapped(e.target.checked)} />
           tylko odcinki z przebiegiem na mapie
@@ -110,6 +149,11 @@ export default function SegmentList({ segments, completedIds, selectedId, onSele
                     {s.geometry ? ` · ${s.distanceKm} km` : " · brak przebiegu na mapie"}
                   </span>
                 </span>
+                {!done && plannedIds.has(s.id) && (
+                  <span className="mt-0.5 shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                    w planie
+                  </span>
+                )}
                 {done && (
                   <span className="mt-0.5 shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800 dark:bg-green-900/50 dark:text-green-300">
                     zaliczony

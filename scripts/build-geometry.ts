@@ -2,7 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildRecordGeometries, toPlaces } from "../lib/got/build-geometry";
 import { buildGraph } from "../lib/got/graph";
-import { featuresQuery, highwaysQuery, overpassTiled, routesQuery } from "../lib/got/osm";
+import { featuresQuery, highwaysQuery, overpassTiled, routesQuery, type OsmElement } from "../lib/got/osm";
 import type { GotRecord } from "../lib/got/types";
 import { REGION_BBOX } from "../data/got/bboxes";
 
@@ -18,26 +18,48 @@ async function main() {
     | [number, number, number, number]
     | undefined;
   const suffix = opt("suffix");
+  // Lokalny wyciąg z pliku .osm.pbf (scripts/osm_extract.py) zamiast Overpass.
+  const extractPath = opt("extract");
+  const extract = extractPath
+    ? (JSON.parse(readFileSync(extractPath, "utf8")) as {
+        features: OsmElement[];
+        routes: OsmElement[];
+        highways: OsmElement[];
+      })
+    : null;
+  const extractGraph = extract ? buildGraph(extract.highways, extract.routes) : null;
+  if (extract) {
+    console.log(
+      `Wyciąg: ${extract.features.length} obiektów, ${extract.routes.length} tras, ${extract.highways.length} dróg`,
+    );
+  }
   const all = JSON.parse(readFileSync(join(ROOT, "data/got/records.json"), "utf8")) as GotRecord[];
   const regions = wanted.length ? wanted : Object.keys(REGION_BBOX);
   mkdirSync(OUT, { recursive: true });
 
   for (const code of regions) {
     const bbox = bboxOverride ?? REGION_BBOX[code];
-    if (!bbox) {
+    if (!bbox && !extract) {
       console.warn(`Brak bbox dla ${code} — pomijam (dodaj w data/got/bboxes.ts)`);
       continue;
     }
     const records = all.filter((r) => r.groupCode === code && r.kind === "edge");
-    console.log(`\n== ${code}: ${records.length} odcinków, bbox ${bbox.join(",")}`);
+    console.log(`\n== ${code}: ${records.length} odcinków${bbox ? `, bbox ${bbox.join(",")}` : ""}`);
+    let feat: OsmElement[];
+    let graph: ReturnType<typeof buildGraph>;
+    if (extract && extractGraph) {
+      feat = extract.features;
+      graph = extractGraph;
+    } else {
     const prog = (label: string) => (d: number, t: number) => process.stdout.write(`\r   ${label} ${d}/${t}   `);
-    const feat = await overpassTiled(featuresQuery, bbox, CACHE, prog("obiekty"));
-    const routes = await overpassTiled(routesQuery, bbox, CACHE, prog("trasy  "));
-    const hw = await overpassTiled(highwaysQuery, bbox, CACHE, prog("drogi  "));
+    feat = await overpassTiled(featuresQuery, bbox!, CACHE, prog("obiekty"));
+    const routes = await overpassTiled(routesQuery, bbox!, CACHE, prog("trasy  "));
+    const hw = await overpassTiled(highwaysQuery, bbox!, CACHE, prog("drogi  "));
     process.stdout.write("\n");
     console.log(`   OSM: ${feat.length} nazwanych obiektów, ${routes.length} tras, ${hw.length} dróg/ścieżek`);
 
-    const graph = buildGraph(hw, routes);
+    graph = buildGraph(hw, routes);
+    }
     const { results, names } = buildRecordGeometries(records, toPlaces(feat), graph);
 
     const stat: Record<string, number> = {};

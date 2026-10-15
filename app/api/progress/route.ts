@@ -1,11 +1,13 @@
 import { DEFAULT_USER_ID, getPool } from "@/lib/db";
 import type { Direction, UserTrailProgress } from "@/types/pttk";
 
+const isDir = (d: unknown): d is Direction => d === "forward" || d === "backward";
+
 export async function GET() {
   try {
     const { rows } = await getPool().query(
       `SELECT user_id, segment_id, direction, completed_at, source_activity_id
-         FROM user_trail_progress WHERE user_id = $1 ORDER BY completed_at`,
+         FROM user_trail_progress WHERE user_id = $1 ORDER BY completed_at DESC`,
       [DEFAULT_USER_ID],
     );
     const progress: UserTrailProgress[] = rows.map((r) => ({
@@ -23,32 +25,56 @@ export async function GET() {
 
 interface PostBody {
   activityId?: string;
-  completions: { segmentId: string; direction: Direction }[];
+  completions: { segmentId: string; direction: Direction; completedAt?: string }[];
 }
 
+/** Dodaje zaliczenia (z GPX lub ręcznie). Ponowne zaliczenie tego samego odcinka/kierunku jest ignorowane. */
 export async function POST(request: Request) {
   const body = (await request.json()) as Partial<PostBody>;
   const items = body.completions;
   if (
     !Array.isArray(items) ||
-    items.some((c) => typeof c?.segmentId !== "string" || !["forward", "backward"].includes(c.direction))
+    items.some(
+      (c) =>
+        typeof c?.segmentId !== "string" ||
+        !isDir(c.direction) ||
+        (c.completedAt !== undefined && Number.isNaN(Date.parse(c.completedAt))),
+    )
   ) {
-    return Response.json({ error: "Wymagane: completions[{segmentId, direction}]" }, { status: 400 });
+    return Response.json({ error: "Wymagane: completions[{segmentId, direction, completedAt?}]" }, { status: 400 });
   }
   try {
     const { rowCount } = await getPool().query(
-      `INSERT INTO user_trail_progress (user_id, segment_id, direction, source_activity_id)
-       SELECT $1, c.segment_id, c.direction, $4
-         FROM unnest($2::text[], $3::text[]) AS c(segment_id, direction)
+      `INSERT INTO user_trail_progress (user_id, segment_id, direction, completed_at, source_activity_id)
+       SELECT $1, c.segment_id, c.direction, COALESCE(c.at::timestamptz, now()), $5
+         FROM unnest($2::text[], $3::text[], $4::text[]) AS c(segment_id, direction, at)
        ON CONFLICT DO NOTHING`,
       [
         DEFAULT_USER_ID,
         items.map((c) => c.segmentId),
         items.map((c) => c.direction),
+        items.map((c) => c.completedAt ?? null),
         body.activityId ?? null,
       ],
     );
     return Response.json({ inserted: rowCount });
+  } catch (e) {
+    return Response.json({ error: (e as Error).message }, { status: 500 });
+  }
+}
+
+/** Cofa zaliczenie odcinka w danym kierunku. */
+export async function DELETE(request: Request) {
+  const { segmentId, direction } = (await request.json()) as { segmentId?: string; direction?: unknown };
+  if (typeof segmentId !== "string" || !isDir(direction)) {
+    return Response.json({ error: "Wymagane: segmentId, direction" }, { status: 400 });
+  }
+  try {
+    const { rowCount } = await getPool().query(
+      `DELETE FROM user_trail_progress WHERE user_id = $1 AND segment_id = $2 AND direction = $3`,
+      [DEFAULT_USER_ID, segmentId, direction],
+    );
+    return Response.json({ deleted: rowCount });
   } catch (e) {
     return Response.json({ error: (e as Error).message }, { status: 500 });
   }

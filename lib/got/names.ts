@@ -49,3 +49,70 @@ export function nameMatchScore(query: string, candidate: string): 0 | 1 | 2 {
   // Kandydat nie może być dużo dłuższy (unikamy "Kuźnice" ≈ "Kuźnice Zakopane Dworzec").
   return cw.length - qw.length <= 1 ? 1 : 0;
 }
+
+/** Dopasowanie bez względu na kolejność słów ("Olczyska Polana" ≈ "Polana Olczyska"). */
+export function nameMatchScoreAnyOrder(query: string, candidate: string): 0 | 1 | 2 {
+  const ordered = nameMatchScore(query, candidate);
+  if (ordered) return ordered;
+  const qw = words(query);
+  const cw = words(candidate);
+  if (!qw.length || qw.length !== cw.length) return 0;
+  const used = new Set<number>();
+  for (const w of qw) {
+    const j = cw.findIndex((c, i) => !used.has(i) && wordsMatch(w, c));
+    if (j === -1) return 0;
+    used.add(j);
+  }
+  return 1;
+}
+
+const GENERIC = new Set([
+  "przelecz", "przelecze", "przeleczy", "przel", "dolina", "doliny", "dolinie", "dolinke", "polana", "polany",
+  "polanie", "schronisko", "schroniska", "schronisku", "hala", "hali", "staw", "stawu", "zleb", "zlebu",
+  "grapa", "turnia", "turni", "pttk", "wielka", "wielkiej", "wielki",
+]);
+
+/** Znane rozbieżności między nazwami z tabeli PTTK a nazwami w OSM (klucz: nazwa znormalizowana, bez końcówek). */
+const ALIASES: [RegExp, string[]][] = [
+  [/^schronisk\w* pttk na hali gasienicowej/, ["Murowaniec"]],
+  [/^schronisk\w* pttk nad morskim okiem/, ["Schronisko nad Morskim Okiem", "Morskie Oko"]],
+  [/^schronisk\w* pttk na polanie chocholowskiej/, ["Schronisko na Polanie Chochołowskiej", "Polana Chochołowska"]],
+  [/^schronisk\w* pttk w dolinie pieciu stawow/, ["Schronisko w Dolinie Pięciu Stawów Polskich", "Dolina Pięciu Stawów Polskich"]],
+  [/^schronisk\w* pttk na hali ornak/, ["Schronisko na Hali Ornak"]],
+  [/^dom\w* turysty pttk/, ["Dom Turysty PTTK"]],
+  [/^kuznic/, ["Kuźnice"]],
+];
+
+/**
+ * Warianty nazwy do geokodowania, od najbardziej do najmniej wiernego oryginałowi:
+ * oczyszczona, alias, bez słowa rodzajowego na początku, bez wszystkich słów rodzajowych.
+ */
+export function nameVariants(raw: string): string[] {
+  const cleaned = raw
+    .replace(/\(jeden kierunek\)/gi, " ")
+    .replace(/\s+przez\s+.*$/i, "")
+    .replace(/\(([^)]*)\)/g, " ")
+    .replace(/\b\d[\d\s÷–-]*\s*m\b/g, " ")
+    .replace(/["„”]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const out: string[] = [];
+  const add = (s: string) => {
+    const t = s.trim();
+    if (t && !out.includes(t)) out.push(t);
+  };
+  add(cleaned);
+
+  const norm = normalizeName(cleaned).replace(/\bprzel\b/g, "przelecz");
+  for (const [re, targets] of ALIASES) if (re.test(norm)) targets.forEach(add);
+
+  // "Wielkiej Polany w Dolinie Małej Łąki" → "Dolina Małej Łąki"
+  const inValley = cleaned.match(/\bw\s+(Dolinie|dolinie)\s+(.+)$/);
+  if (inValley) add(`Dolina ${inValley[2]}`);
+
+  const ws = cleaned.split(" ");
+  if (ws.length > 1 && GENERIC.has(normalizeName(ws[0]))) add(ws.slice(1).join(" "));
+  const core = ws.filter((w) => !GENERIC.has(normalizeName(w)));
+  if (core.length && core.length < ws.length) add(core.join(" "));
+  return out;
+}

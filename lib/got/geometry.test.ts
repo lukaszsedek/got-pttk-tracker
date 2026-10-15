@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { buildRecordGeometries, toPlaces } from "./build-geometry";
 import { buildGraph } from "./graph";
-import { nameMatchScore } from "./names";
+import { nameMatchScore, nameMatchScoreAnyOrder, nameVariants } from "./names";
 import type { OsmElement } from "./osm";
 import type { GotRecord } from "./types";
 
@@ -122,4 +122,18 @@ test("przycina niezaznakowane dojścia do szlaku", () => {
 test("alternatywne nazwy (name:pl) są używane do dopasowania", () => {
   const places = toPlaces([node(1, "Štrbské pleso", 20.05, 49.12, { place: "locality", "name:pl": "Szczyrbskie Jezioro" })]);
   assert.ok(places.some((p) => p.name === "Szczyrbskie Jezioro"));
+});
+
+test("kolejność słów nie ma znaczenia przy dopasowaniu nazw", () => {
+  assert.equal(nameMatchScore("Olczyska Polana", "Polana Olczyska"), 0);
+  assert.equal(nameMatchScoreAnyOrder("Olczyska Polana", "Polana Olczyska"), 1);
+  assert.equal(nameMatchScoreAnyOrder("Giewont", "Kasprowy Wierch"), 0);
+});
+
+test("warianty nazw: przez, alias, słowa rodzajowe", () => {
+  assert.equal(nameVariants("Kuźnic przez Boczań (1224 m)")[0], "Kuźnic");
+  assert.ok(nameVariants("Schroniska PTTK na Hali Gąsienicowej (1500 m)").includes("Murowaniec"));
+  assert.ok(nameVariants("Przełęcz Krzyżne").includes("Krzyżne"));
+  assert.ok(nameVariants("Wielkiej Polany w Dolinie Małej Łąki").includes("Dolina Małej Łąki"));
+  assert.ok(nameVariants("Żlebu Kulczyńskiego (jeden kierunek)")[0].startsWith("Żlebu Kulczyńskiego"));
 });

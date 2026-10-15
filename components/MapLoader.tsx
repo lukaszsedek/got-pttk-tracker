@@ -2,109 +2,188 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
+import BookletPanel from "@/components/BookletPanel";
 import GpxImport from "@/components/GpxImport";
+import PlanPanel from "@/components/PlanPanel";
+import SegmentDetail from "@/components/SegmentDetail";
 import SegmentList from "@/components/SegmentList";
 import { Card } from "@/components/ui";
 import type { MapSegment } from "@/components/Map";
-import type { Direction, SegmentRow, UserTrailProgress } from "@/types/pttk";
+import { dirPoints, key } from "@/lib/booklet";
+import type { Direction, PlanItem, SegmentRow, UserTrailProgress } from "@/types/pttk";
 
 // MapLibre wymaga `window` — wyłączamy SSR.
 const Map = dynamic(() => import("@/components/Map"), {
   ssr: false,
   loading: () => (
-    <div className="flex h-full items-center justify-center text-sm text-zinc-500">
-      Ładowanie mapy…
-    </div>
+    <div className="flex h-full items-center justify-center text-sm text-zinc-500">Ładowanie mapy…</div>
   ),
 });
 
-async function getJson<T>(url: string, init?: RequestInit): Promise<T> {
+async function api<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
   const json = await res.json();
   if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
   return json as T;
 }
+const send = (method: string, body: unknown): RequestInit => ({
+  method,
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(body),
+});
 
-type Done = { segmentId: string; direction: Direction };
+type Tab = "trasy" | "ksiazeczka" | "plan" | "import";
+type Completion = { segmentId: string; direction: Direction; completedAt?: string };
+
+function readGoal(): number {
+  try {
+    const v = Number(localStorage.getItem("got.goal"));
+    return Number.isFinite(v) && v > 0 ? v : 30;
+  } catch {
+    return 30;
+  }
+}
 
 export default function MapLoader() {
   const [segments, setSegments] = useState<SegmentRow[] | null>(null);
+  const [progress, setProgress] = useState<UserTrailProgress[]>([]);
+  const [plan, setPlan] = useState<PlanItem[]>([]);
   const [track, setTrack] = useState<[number, number][] | null>(null);
   const [preview, setPreview] = useState<string[]>([]);
-  const [done, setDone] = useState<Done[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>("trasy");
+  const [goal, setGoal] = useState<number>(readGoal);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  // Wszystkie odcinki + postęp — raz (bez wyboru grupy).
   useEffect(() => {
     Promise.all([
-      getJson<{ segments: SegmentRow[] }>("/api/segments"),
-      getJson<{ progress: UserTrailProgress[] }>("/api/progress"),
+      api<{ segments: SegmentRow[] }>("/api/segments"),
+      api<{ progress: UserTrailProgress[] }>("/api/progress"),
+      api<{ plan: PlanItem[] }>("/api/plan"),
     ])
-      .then(([s, p]) => {
+      .then(([s, p, pl]) => {
         setSegments(s.segments);
-        setDone(p.progress.map((x) => ({ segmentId: x.segmentId, direction: x.direction })));
+        setProgress(p.progress);
+        setPlan(pl.plan);
       })
       .catch((e: Error) => setError(e.message));
   }, []);
 
-  const completedIds = useMemo(() => new Set(done.map((d) => d.segmentId)), [done]);
+  const fail = (e: unknown) => setNotice((e as Error).message);
 
-  const confirm = useCallback(
-    async (completions: Done[], activityId: string) => {
+  const changeGoal = (n: number) => {
+    setGoal(n);
+    try {
+      localStorage.setItem("got.goal", String(n));
+    } catch {
+      /* ignoruj: tryb prywatny */
+    }
+  };
+
+  const complete = useCallback(async (items: Completion[], activityId?: string) => {
+    try {
+      await api("/api/progress", send("POST", { activityId, completions: items }));
+      const p = await api<{ progress: UserTrailProgress[] }>("/api/progress");
+      setProgress(p.progress);
+      // Zaliczone odcinki znikają z planu.
+      const done = new Set(items.map((i) => key(i.segmentId, i.direction)));
+      setPlan((prev) => prev.filter((x) => !done.has(key(x.segmentId, x.direction))));
+      await Promise.all(
+        items.map((i) => api("/api/plan", send("DELETE", { segmentId: i.segmentId, direction: i.direction }))),
+      );
+    } catch (e) {
+      fail(e);
+    }
+  }, []);
+
+  const undo = useCallback(async (segmentId: string, direction: Direction) => {
+    try {
+      await api("/api/progress", send("DELETE", { segmentId, direction }));
+      setProgress((prev) => prev.filter((p) => !(p.segmentId === segmentId && p.direction === direction)));
+    } catch (e) {
+      fail(e);
+    }
+  }, []);
+
+  const togglePlan = useCallback(
+    async (segmentId: string, direction: Direction) => {
+      const exists = plan.some((p) => p.segmentId === segmentId && p.direction === direction);
       try {
-        await getJson("/api/progress", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ activityId, completions }),
-        });
-        setDone((prev) => [...prev, ...completions]);
+        await api("/api/plan", send(exists ? "DELETE" : "POST", { segmentId, direction }));
+        setPlan((prev) =>
+          exists
+            ? prev.filter((p) => !(p.segmentId === segmentId && p.direction === direction))
+            : [...prev, { segmentId, direction, addedAt: new Date().toISOString() }],
+        );
       } catch (e) {
-        setError((e as Error).message);
+        fail(e);
       }
     },
-    [],
+    [plan],
   );
 
-  const stats = useMemo(() => {
-    if (!segments) return null;
-    const byId = new globalThis.Map(segments.map((s) => [s.id, s]));
-    const points = done.reduce((sum, d) => {
-      const s = byId.get(d.segmentId);
-      if (!s) return sum;
-      return sum + (d.direction === "forward" ? s.gotPointsForward : s.gotPointsBackward);
-    }, 0);
-    const km = segments.filter((s) => completedIds.has(s.id)).reduce((a, s) => a + s.distanceKm, 0);
-    return { points, km: Math.round(km * 10) / 10 };
-  }, [segments, done, completedIds]);
-
-  // Tylko odcinki z przebiegiem trafiają na mapę i do automatycznego wykrywania.
+  const segById = useMemo(
+    () => new globalThis.Map((segments ?? []).map((s) => [s.id, s])),
+    [segments],
+  );
+  const completedIds = useMemo(() => new Set(progress.map((p) => p.segmentId)), [progress]);
+  const plannedIds = useMemo(() => new Set(plan.map((p) => p.segmentId)), [plan]);
   const mapped = useMemo(
     () => (segments ?? []).filter((s): s is MapSegment => s.geometry !== null),
     [segments],
   );
   const highlight = useMemo(() => new Set(preview), [preview]);
 
+  const points = useMemo(
+    () =>
+      progress.reduce((sum, p) => {
+        const s = segById.get(p.segmentId);
+        return s ? sum + dirPoints(s, p.direction) : sum;
+      }, 0),
+    [progress, segById],
+  );
+  const selected = selectedId ? (segById.get(selectedId) ?? null) : null;
+
+  const select = (id: string | null) => {
+    setSelectedId(id);
+    if (id) setTab("trasy");
+  };
+
+  const tabs: [Tab, string][] = [
+    ["trasy", "Trasy"],
+    ["ksiazeczka", `Książeczka (${progress.length})`],
+    ["plan", `Plan (${plan.length})`],
+    ["import", "Import GPX"],
+  ];
+
   return (
     <div className="flex h-dvh flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 bg-white px-5 py-3 dark:border-zinc-800 dark:bg-zinc-900">
         <div className="flex items-center gap-3">
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-green-600 text-xl text-white">
-            ⛰
-          </span>
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-green-600 text-xl text-white">⛰</span>
           <div>
             <h1 className="text-lg leading-tight font-bold">GOT PTTK Tracker</h1>
-            <p className="text-xs text-zinc-500">Wszystkie trasy punktowane PTTK · wykrywanie automatyczne</p>
+            <p className="text-xs text-zinc-500">Planuj, przeglądaj i uzupełniaj książeczkę GOT</p>
           </div>
         </div>
-        {stats && segments && (
+        {segments && (
           <dl className="flex gap-2 text-center">
-            <Stat label="Odcinki" value={`${completedIds.size}/${segments.length}`} />
-            <Stat label="Punkty GOT" value={String(stats.points)} />
-            <Stat label="Dystans" value={`${stats.km} km`} />
+            <Stat label="Punkty GOT" value={String(points)} />
+            <Stat label="Zaliczone odcinki" value={`${completedIds.size}/${segments.length}`} />
+            <Stat label="W planie" value={String(plan.length)} />
           </dl>
         )}
       </header>
+
+      {notice && (
+        <div className="flex items-center justify-between bg-red-50 px-5 py-2 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">
+          <span>{notice}</span>
+          <button onClick={() => setNotice(null)} className="text-xs underline">
+            zamknij
+          </button>
+        </div>
+      )}
 
       {error ? (
         <div className="m-5 rounded-2xl bg-red-50 p-5 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">
@@ -125,45 +204,88 @@ export default function MapLoader() {
               selectedId={selectedId}
               highlightIds={highlight}
               track={track}
-              onSelect={setSelectedId}
+              onSelect={select}
             />
             <Legend />
           </main>
-          <aside className="order-2 flex shrink-0 flex-col gap-4 md:order-1 md:w-96 md:overflow-y-auto md:pr-1">
-            {stats && segments && (
-              <Card title="Postęp">
-                <div className="mb-2 flex items-baseline justify-between text-sm">
-                  <span>
-                    <strong className="text-2xl">{completedIds.size}</strong>
-                    <span className="text-zinc-500"> / {segments.length} odcinków (na mapie: {mapped.length})</span>
-                  </span>
-                  <span className="font-semibold text-green-700 dark:text-green-400">
-                    {stats.points} pkt
-                  </span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
-                  <div
-                    className="h-full rounded-full bg-green-600 transition-all"
-                    style={{
-                      width: `${segments.length ? (completedIds.size / segments.length) * 100 : 0}%`,
-                    }}
+
+          <aside className="order-2 flex shrink-0 flex-col gap-4 md:order-1 md:w-[26rem] md:overflow-y-auto md:pr-1">
+            <nav className="grid grid-cols-2 gap-1 rounded-xl bg-zinc-200/70 p-1 text-sm font-medium dark:bg-zinc-800">
+              {tabs.map(([id, label]) => (
+                <button
+                  key={id}
+                  onClick={() => setTab(id)}
+                  className={`rounded-lg px-2 py-1.5 transition-colors ${
+                    tab === id
+                      ? "bg-white shadow-sm dark:bg-zinc-900"
+                      : "text-zinc-600 hover:bg-white/60 dark:text-zinc-400 dark:hover:bg-zinc-700/60"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </nav>
+
+            {tab === "trasy" && (
+              <>
+                {selected && (
+                  <SegmentDetail
+                    segment={selected}
+                    progress={progress}
+                    plan={plan}
+                    onComplete={(d, at) => complete([{ segmentId: selected.id, direction: d, completedAt: at }])}
+                    onUndo={(d) => undo(selected.id, d)}
+                    onTogglePlan={(d) => togglePlan(selected.id, d)}
+                    onClose={() => setSelectedId(null)}
                   />
-                </div>
+                )}
+                <SegmentList
+                  segments={segments}
+                  completedIds={completedIds}
+                  plannedIds={plannedIds}
+                  selectedId={selectedId}
+                  onSelect={select}
+                />
+              </>
+            )}
+
+            {tab === "ksiazeczka" && (
+              <BookletPanel
+                progress={progress}
+                segById={segById}
+                goal={goal}
+                onGoalChange={changeGoal}
+                onSelect={select}
+                onUndo={undo}
+              />
+            )}
+
+            {tab === "plan" && (
+              <PlanPanel
+                plan={plan}
+                segById={segById}
+                currentPoints={points}
+                goal={goal}
+                onSelect={select}
+                onRemove={togglePlan}
+                onCompleteAll={(items, at) =>
+                  complete(items.map((i) => ({ ...i, completedAt: at })))
+                }
+              />
+            )}
+
+            {tab === "import" && (
+              <Card title="Import z zegarka">
+                <GpxImport
+                  segments={mapped}
+                  completedIds={completedIds}
+                  onConfirm={(items, activityId) => complete(items, activityId)}
+                  onTrack={setTrack}
+                  onPreview={setPreview}
+                  embedded
+                />
               </Card>
             )}
-            <GpxImport
-              segments={mapped}
-              completedIds={completedIds}
-              onConfirm={confirm}
-              onTrack={setTrack}
-              onPreview={setPreview}
-            />
-            <SegmentList
-              segments={segments}
-              completedIds={completedIds}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-            />
           </aside>
         </div>
       )}
@@ -187,7 +309,8 @@ function Legend() {
         <span className="h-1.5 w-6 rounded-full bg-green-500/60" /> zaliczony (zielona poświata)
       </span>
       <span className="flex items-center gap-2">
-        <span className="h-1.5 w-6 rounded-full bg-gradient-to-r from-red-600 via-blue-600 to-green-600" /> kolor znakowania szlaku
+        <span className="h-1.5 w-6 rounded-full bg-gradient-to-r from-red-600 via-blue-600 to-green-600" /> kolor
+        znakowania szlaku
       </span>
       <span className="flex items-center gap-2">
         <span className="h-1.5 w-6 rounded-full bg-amber-500" /> wykryty / wybrany

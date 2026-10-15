@@ -13,16 +13,18 @@ interface Props {
   onTrack?: (coords: [number, number][] | null) => void;
   /** Odcinki wykryte w bieżącym podglądzie (do podświetlenia na mapie). */
   onPreview?: (segmentIds: string[]) => void;
+  /** Bez własnej karty (osadzone w zewnętrznej). */
+  embedded?: boolean;
   completedIds: ReadonlySet<string>;
   onConfirm: (
-    completions: { segmentId: string; direction: Direction }[],
+    completions: { segmentId: string; direction: Direction; completedAt?: string }[],
     activityId: string,
   ) => void | Promise<void>;
 }
 
 const DIR_LABEL = { forward: "tam →", backward: "← z powrotem" } as const;
 
-export default function GpxImport({ segments, completedIds, onConfirm, onTrack, onPreview }: Props) {
+export default function GpxImport({ segments, completedIds, onConfirm, onTrack, onPreview, embedded }: Props) {
   const [summary, setSummary] = useState<MatchSummary | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -58,8 +60,8 @@ export default function GpxImport({ segments, completedIds, onConfirm, onTrack, 
   ];
   const extraPoints = partials.filter((m) => accepted.has(key(m))).reduce((s, m) => s + m.gotPoints, 0);
 
-  return (
-    <Card title="Import GPX">
+  const body = (
+    <>
       <label
         onDragOver={(e) => {
           e.preventDefault();
@@ -183,7 +185,11 @@ export default function GpxImport({ segments, completedIds, onConfirm, onTrack, 
               className="rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-green-700"
               onClick={() => {
                 void onConfirm(
-                  fresh.map((m) => ({ segmentId: m.segmentId, direction: m.direction })),
+                  fresh.map((m) => ({
+                    segmentId: m.segmentId,
+                    direction: m.direction,
+                    completedAt: summary.startedAt,
+                  })),
                   summary.activityId,
                 );
                 setSummary(null);
@@ -196,6 +202,8 @@ export default function GpxImport({ segments, completedIds, onConfirm, onTrack, 
           )}
         </div>
       )}
-    </Card>
+    </>
   );
+
+  return embedded ? <div>{body}</div> : <Card title="Import GPX">{body}</Card>;
 }

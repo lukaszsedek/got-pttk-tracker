@@ -1,5 +1,5 @@
 import { colorMask, haversine, pathEdgeColors, shortestPath, snap, type Graph, type RouteMode } from "./graph";
-import { nameMatchScore } from "./names";
+import { nameMatchScoreAnyOrder as nameMatchScore, nameVariants } from "./names";
 import type { OsmElement } from "./osm";
 import type { GotRecord } from "./types";
 
@@ -70,12 +70,15 @@ export function geocodeNames(records: GotRecord[], places: Place[]) {
   const candidates = new Map<string, Cand[]>();
   for (const n of names) {
     const hits: Cand[] = [];
-    for (const p of places) {
-      const s = nameMatchScore(n, p.name);
-      if (s) hits.push({ lat: p.lat, lng: p.lng, score: s });
-    }
-    // Zostaw tylko najlepszy poziom dopasowania (dokładne wypierają fleksyjne).
-    const best = Math.max(0, ...hits.map((h) => h.score));
+    // Warianty nazwy (alias, bez słów rodzajowych…); im dalszy wariant, tym niższy priorytet.
+    nameVariants(n).forEach((variant, rank) => {
+      for (const p of places) {
+        const s = nameMatchScore(variant, p.name);
+        if (s) hits.push({ lat: p.lat, lng: p.lng, score: s * 10 - rank });
+      }
+    });
+    // Zostaw tylko najlepszy poziom dopasowania (dokładne wypierają fleksyjne i wariantowe).
+    const best = Math.max(-Infinity, ...hits.map((h) => h.score));
     candidates.set(n, hits.filter((h) => h.score === best));
   }
 

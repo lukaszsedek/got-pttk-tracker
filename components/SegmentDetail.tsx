@@ -10,6 +10,9 @@ interface Props {
   progress: UserTrailProgress[];
   plan: PlanItem[];
   onComplete: (direction: Direction, completedAtIso: string) => void;
+  /** Zalicza oba kierunki naraz (wejście i zejście tą samą trasą). */
+  onCompleteBoth: (completedAtIso: string) => void;
+  onPlanBoth: () => void;
   onUndo: (direction: Direction) => void;
   onTogglePlan: (direction: Direction) => void;
   onClose: () => void;
@@ -17,7 +20,7 @@ interface Props {
 
 const DIRS: Direction[] = ["forward", "backward"];
 
-export default function SegmentDetail({ segment, progress, plan, onComplete, onUndo, onTogglePlan, onClose }: Props) {
+export default function SegmentDetail({ segment, progress, plan, onComplete, onCompleteBoth, onPlanBoth, onUndo, onTogglePlan, onClose }: Props) {
   const [date, setDate] = useState(todayInput());
   const done = new Map(progress.filter((p) => p.segmentId === segment.id).map((p) => [key(p.segmentId, p.direction), p]));
   const planned = new Set(plan.map((p) => key(p.segmentId, p.direction)));
@@ -48,6 +51,23 @@ export default function SegmentDetail({ segment, progress, plan, onComplete, onU
           className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 text-sm dark:border-zinc-700"
         />
       </label>
+
+      {DIRS.some((d) => !done.has(key(segment.id, d))) && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            onClick={() => onCompleteBoth(dateInputToIso(date))}
+            className="flex-1 rounded-xl bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700"
+          >
+            ⇄ Zalicz w obie strony (+{DIRS.filter((d) => !done.has(key(segment.id, d))).reduce((a, d) => a + dirPoints(segment, d), 0)} pkt)
+          </button>
+          <button
+            onClick={onPlanBoth}
+            className="rounded-xl border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
+          >
+            Plan: obie strony
+          </button>
+        </div>
+      )}
 
       <ul className="mt-3 flex flex-col gap-2">
         {DIRS.map((d) => {

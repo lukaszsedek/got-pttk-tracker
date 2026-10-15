@@ -270,6 +270,18 @@ export default function MapLoader() {
                     progress={progress}
                     plan={plan}
                     onComplete={(d, at) => complete([{ segmentId: selected.id, direction: d, completedAt: at }])}
+                    onCompleteBoth={(at) =>
+                      complete(
+                        (["forward", "backward"] as Direction[])
+                          .filter((d) => !progress.some((p) => p.segmentId === selected.id && p.direction === d))
+                          .map((d) => ({ segmentId: selected.id, direction: d, completedAt: at })),
+                      )
+                    }
+                    onPlanBoth={() =>
+                      (["forward", "backward"] as Direction[])
+                        .filter((d) => !plan.some((p) => p.segmentId === selected.id && p.direction === d))
+                        .forEach((d) => void togglePlan(selected.id, d))
+                    }
                     onUndo={(d) => undo(selected.id, d)}
                     onTogglePlan={(d) => togglePlan(selected.id, d)}
                     onClose={() => setSelectedId(null)}

@@ -91,7 +91,7 @@ export function nameVariants(raw: string): string[] {
   // Szum z tabel PTTK: punkty doklejone do nazwy, kody grup, przystanki, "TPG".
   const pre = raw
     .replace(/\s+\d+(?:\+\d+)?\s*\/\s*[\d?-]+\s*$/, "")
-    .replace(/\b(?:BZ|BW|[SŁŁT])\.?\s?\d{2}\b/gi, " ")
+    .replace(/(?<![\p{L}\d])(?:BZ|BW|[SŁT])\.?\s?\d{2}(?!\d)/giu, " ")
     .replace(/^(?:z|ze|od|do)\s+/i, "")
     .replace(/^BZ\s+/i, "")
     .replace(/\b(?:TPG|PKP|PKS|Razc\.?)\b/g, " ");

@@ -58,39 +58,56 @@ export default function PlanPanel({ plan, segById, currentPoints, scored, goal, 
         </p>
       ) : (
         <>
-          <ul className="flex flex-col divide-y divide-zinc-100 dark:divide-zinc-800">
-            {items.map(({ p, s, points: pts }) => (
-              <li key={key(p.segmentId, p.direction)} className="flex items-start gap-2 py-2 text-sm">
-                <button className="min-w-0 flex-1 text-left" onClick={() => onSelect(s.id)}>
-                  <span className="block leading-snug font-medium">{directionLabel(s.name, p.direction)}</span>
-                  <span className="text-xs text-zinc-500">
-                    {s.regionName || s.groupId}
-                    {s.geometry ? ` · ${s.distanceKm} km` : ""}
-                  </span>
-                </button>
-                <span className="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-semibold dark:bg-zinc-800">
-                  {pts} pkt
-                </span>
-                <button
-                  onClick={() => {
-                    onToggle(p.segmentId, p.direction);
-                    onToggle(p.segmentId, p.direction === "forward" ? "backward" : "forward");
-                  }}
-                  title="Zmień kierunek"
-                  className="shrink-0 px-1 text-zinc-500 hover:text-green-700"
-                >
-                  ⇄
-                </button>
-                <button
-                  onClick={() => onRemove(p.segmentId, p.direction)}
-                  title="Usuń z planu"
-                  className="shrink-0 px-1 text-zinc-400 hover:text-red-600"
-                >
-                  ✕
-                </button>
-              </li>
-            ))}
-          </ul>
+          <div className="overflow-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
+            <table className="w-full border-collapse text-sm">
+              <thead className="bg-zinc-100 text-left text-[11px] tracking-wide text-zinc-600 uppercase dark:bg-zinc-800 dark:text-zinc-300">
+                <tr>
+                  <th className="py-2 pl-2.5 font-semibold">Odcinek</th>
+                  <th className="px-2 py-2 text-right font-semibold">Km</th>
+                  <th className="px-2 py-2 text-right font-semibold">Pkt</th>
+                  <th className="w-14" aria-label="Akcje" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                {items.map(({ p, s, points: pts }) => (
+                  <tr
+                    key={key(p.segmentId, p.direction)}
+                    className="odd:bg-white even:bg-zinc-50/60 hover:bg-zinc-100 dark:odd:bg-zinc-900 dark:even:bg-zinc-900/60 dark:hover:bg-zinc-800"
+                  >
+                    <td className="py-2 pl-2.5 align-top">
+                      <button className="text-left" onClick={() => onSelect(s.id)}>
+                        <span className="block leading-snug font-medium">{directionLabel(s.name, p.direction)}</span>
+                        <span className="text-xs text-zinc-500">{s.regionName || s.groupId}</span>
+                      </button>
+                    </td>
+                    <td className="px-2 py-2 text-right align-top whitespace-nowrap text-zinc-600 tabular-nums dark:text-zinc-400">
+                      {s.geometry ? s.distanceKm : "—"}
+                    </td>
+                    <td className="px-2 py-2 text-right align-top font-semibold tabular-nums">{pts}</td>
+                    <td className="py-2 pr-2 text-right align-top whitespace-nowrap">
+                      <button
+                        onClick={() => {
+                          onToggle(p.segmentId, p.direction);
+                          onToggle(p.segmentId, p.direction === "forward" ? "backward" : "forward");
+                        }}
+                        title="Zmień kierunek"
+                        className="px-1 text-zinc-500 hover:text-green-700"
+                      >
+                        ⇄
+                      </button>
+                      <button
+                        onClick={() => onRemove(p.segmentId, p.direction)}
+                        title="Usuń z planu"
+                        className="px-1 text-zinc-400 hover:text-red-600"
+                      >
+                        ✕
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           <div className="mt-3 rounded-xl bg-zinc-50 p-3 text-sm dark:bg-zinc-800/60">
             <div className="flex justify-between">

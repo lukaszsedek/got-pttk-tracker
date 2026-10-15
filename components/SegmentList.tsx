@@ -120,50 +120,77 @@ export default function SegmentList({ segments, completedIds, plannedIds, select
         </label>
       </div>
 
-      <ul className="flex flex-col gap-1">
-        {filtered.slice(0, limit).map((s) => {
-          const done = completedIds.has(s.id);
-          const active = s.id === selectedId;
-          return (
-            <li key={s.id}>
-              <button
-                onClick={() => onSelect(active ? null : s.id)}
-                disabled={!s.geometry}
-                className={`flex w-full items-start gap-2.5 rounded-xl px-2.5 py-2 text-left text-sm transition-colors disabled:cursor-default ${
-                  active
-                    ? "bg-amber-50 ring-1 ring-amber-400 dark:bg-amber-950/30"
-                    : "hover:bg-zinc-100 disabled:hover:bg-transparent dark:hover:bg-zinc-800"
-                }`}
-              >
-                <span className="mt-1">
-                  {s.trailColor ? (
-                    <TrailDot color={s.trailColor} />
-                  ) : (
-                    <span className="inline-block h-3 w-3 rounded-full border border-zinc-400" />
-                  )}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block leading-snug font-medium">{s.name}</span>
-                  <span className="text-xs text-zinc-500">
-                    {s.regionName || s.groupId} · {s.gotPointsForward}/{s.gotPointsBackward} pkt
-                    {s.geometry ? ` · ${s.distanceKm} km` : " · brak przebiegu na mapie"}
-                  </span>
-                </span>
-                {!done && plannedIds.has(s.id) && (
-                  <span className="mt-0.5 shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
-                    w planie
-                  </span>
-                )}
-                {done && (
-                  <span className="mt-0.5 shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800 dark:bg-green-900/50 dark:text-green-300">
-                    zaliczony
-                  </span>
-                )}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      <div className="max-h-[60vh] overflow-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
+        <table className="w-full border-collapse text-sm">
+          <thead className="sticky top-0 z-10 bg-zinc-100 text-left text-[11px] tracking-wide text-zinc-600 uppercase dark:bg-zinc-800 dark:text-zinc-300">
+            <tr>
+              <th className="w-7 py-2 pl-2.5" aria-label="Kolor szlaku" />
+              <th className="py-2 pr-2 font-semibold">Odcinek</th>
+              <th className="px-2 py-2 text-right font-semibold" title="Punkty tam / z powrotem">
+                Pkt
+              </th>
+              <th className="px-2 py-2 text-right font-semibold">Km</th>
+              <th className="py-2 pr-2.5 text-center font-semibold" aria-label="Status" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+            {filtered.slice(0, limit).map((s) => {
+              const done = completedIds.has(s.id);
+              const active = s.id === selectedId;
+              return (
+                <tr
+                  key={s.id}
+                  onClick={() => s.geometry && onSelect(active ? null : s.id)}
+                  className={`${s.geometry ? "cursor-pointer" : "opacity-60"} transition-colors ${
+                    active
+                      ? "bg-amber-50 dark:bg-amber-950/30"
+                      : "odd:bg-white even:bg-zinc-50/60 hover:bg-zinc-100 dark:odd:bg-zinc-900 dark:even:bg-zinc-900/60 dark:hover:bg-zinc-800"
+                  }`}
+                >
+                  <td className="py-2 pl-2.5 align-top">
+                    <span className="mt-0.5 inline-block">
+                      {s.trailColor ? (
+                        <TrailDot color={s.trailColor} />
+                      ) : (
+                        <span className="inline-block h-3 w-3 rounded-full border border-zinc-400" />
+                      )}
+                    </span>
+                  </td>
+                  <td className="py-2 pr-2 align-top">
+                    <div className="leading-snug font-medium">{s.name}</div>
+                    <div className="text-xs text-zinc-500">
+                      {s.regionName || s.groupId}
+                      {!s.geometry && " · brak przebiegu"}
+                    </div>
+                  </td>
+                  <td className="px-2 py-2 text-right align-top whitespace-nowrap tabular-nums">
+                    {s.gotPointsForward}
+                    <span className="text-zinc-400"> / </span>
+                    {s.gotPointsBackward}
+                  </td>
+                  <td className="px-2 py-2 text-right align-top whitespace-nowrap text-zinc-600 tabular-nums dark:text-zinc-400">
+                    {s.geometry ? s.distanceKm : "—"}
+                  </td>
+                  <td className="py-2 pr-2.5 text-center align-top">
+                    {done ? (
+                      <span title="zaliczony" className="font-bold text-green-600">✓</span>
+                    ) : plannedIds.has(s.id) ? (
+                      <span title="w planie" className="font-bold text-purple-600">●</span>
+                    ) : null}
+                  </td>
+                </tr>
+              );
+            })}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={5} className="py-6 text-center text-sm text-zinc-500">
+                  Brak odcinków dla wybranych filtrów.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
       {filtered.length > limit && (
         <button
           onClick={() => setLimit((l) => l + PAGE)}

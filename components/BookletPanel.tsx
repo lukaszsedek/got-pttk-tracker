@@ -112,29 +112,56 @@ export default function BookletPanel({ progress, segById, goal, onGoalChange, on
             Brak wpisów. Zaimportuj plik GPX albo zalicz odcinek ręcznie w zakładce „Trasy”.
           </p>
         ) : (
-          <ul className="flex flex-col divide-y divide-zinc-100 dark:divide-zinc-800">
-            {rows.map(({ p, s, points }) => (
-              <li key={`${p.segmentId}-${p.direction}`} className="flex items-start gap-2 py-2 text-sm">
-                <button className="min-w-0 flex-1 text-left" onClick={() => onSelect(s.id)}>
-                  <span className="block leading-snug font-medium">{directionLabel(s.name, p.direction)}</span>
-                  <span className="text-xs text-zinc-500">
-                    {formatDate(p.completedAt)} · {s.regionName || s.groupId}
-                    {p.sourceActivityId ? " · GPX" : ""}
-                  </span>
-                </button>
-                <span className="shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800 dark:bg-green-900/50 dark:text-green-300">
-                  {points} pkt
-                </span>
-                <button
-                  onClick={() => onUndo(p.segmentId, p.direction)}
-                  title="Usuń wpis"
-                  className="shrink-0 px-1 text-zinc-400 hover:text-red-600"
-                >
-                  ✕
-                </button>
-              </li>
-            ))}
-          </ul>
+          <div className="overflow-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
+            <table className="w-full border-collapse text-sm">
+              <thead className="bg-zinc-100 text-left text-[11px] tracking-wide text-zinc-600 uppercase dark:bg-zinc-800 dark:text-zinc-300">
+                <tr>
+                  <th className="py-2 pl-2.5 font-semibold">Data</th>
+                  <th className="px-2 py-2 font-semibold">Odcinek</th>
+                  <th className="px-2 py-2 text-right font-semibold">Pkt</th>
+                  <th className="w-7" aria-label="Usuń" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                {rows.map(({ p, s, points }) => (
+                  <tr
+                    key={`${p.segmentId}-${p.direction}`}
+                    className="odd:bg-white even:bg-zinc-50/60 hover:bg-zinc-100 dark:odd:bg-zinc-900 dark:even:bg-zinc-900/60 dark:hover:bg-zinc-800"
+                  >
+                    <td className="py-2 pl-2.5 align-top text-xs whitespace-nowrap text-zinc-600 tabular-nums dark:text-zinc-400">
+                      {formatDate(p.completedAt)}
+                    </td>
+                    <td className="px-2 py-2 align-top">
+                      <button className="text-left" onClick={() => onSelect(s.id)}>
+                        <span className="block leading-snug font-medium">{directionLabel(s.name, p.direction)}</span>
+                        <span className="text-xs text-zinc-500">
+                          {s.regionName || s.groupId}
+                          {p.sourceActivityId ? " · GPX" : " · ręcznie"}
+                        </span>
+                      </button>
+                    </td>
+                    <td className="px-2 py-2 text-right align-top font-semibold tabular-nums">{points}</td>
+                    <td className="py-2 pr-2 text-center align-top">
+                      <button
+                        onClick={() => onUndo(p.segmentId, p.direction)}
+                        title="Usuń wpis"
+                        className="text-zinc-400 hover:text-red-600"
+                      >
+                        ✕
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="bg-zinc-100 font-semibold dark:bg-zinc-800">
+                <tr>
+                  <td colSpan={2} className="py-2 pl-2.5">Razem</td>
+                  <td className="px-2 py-2 text-right tabular-nums">{total}</td>
+                  <td />
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         )}
       </Card>
     </div>

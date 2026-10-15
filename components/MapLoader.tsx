@@ -196,18 +196,17 @@ export default function MapLoader() {
     void togglePlan(id, order.find((d) => !done.has(d)) ?? order[0]);
   };
   const planIds = plannedIds;
-  const scored = useMemo(
+  const entries = useMemo(
     () =>
-      scoreEntries(
-        progress.flatMap((p) => {
-          const s = segById.get(p.segmentId);
-          return s
-            ? [{ day: p.completedAt.slice(0, 10), points: dirPoints(s, p.direction), foreign: s.groupId.startsWith("SK-") }]
-            : [];
-        }),
-      ),
+      progress.flatMap((p) => {
+        const s = segById.get(p.segmentId);
+        return s
+          ? [{ day: p.completedAt.slice(0, 10), points: dirPoints(s, p.direction), foreign: s.groupId.startsWith("SK-") }]
+          : [];
+      }),
     [progress, segById],
   );
+  const scored = useMemo(() => scoreEntries(entries), [entries]);
   const badge = badgeStatus(scored.domestic, scored.foreign).current;
 
   const tabs: [Tab, string][] = [
@@ -383,7 +382,7 @@ export default function MapLoader() {
             )}
 
             {tab === "odznaki" && (
-              <BadgesPanel scored={scored} onSetGoal={changeGoal} />
+              <BadgesPanel scored={scored} entries={entries} onSetGoal={changeGoal} />
             )}
 
             {tab === "import" && (

@@ -65,6 +65,8 @@ export interface SegmentMatch {
   alreadyCompleted: boolean;
   /** Pokrycie poniżej progu (np. 50–85%) — wymaga ręcznego potwierdzenia. */
   partial?: boolean;
+  /** Data wycieczki (ISO), gdy ślad obejmował kilka dni. */
+  day?: string;
 }
 
 /** Podsumowanie importu do zatwierdzenia przez użytkownika. */

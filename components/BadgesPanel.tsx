@@ -1,14 +1,33 @@
 "use client";
 
+import { useMemo } from "react";
 import { Card } from "@/components/ui";
-import { BADGES, MAX_PER_DAY, W_GORY, WYTRWALOSC_NORM, badgeStatus, type scoreEntries } from "@/lib/badges";
+import { BADGES, MAX_PER_DAY, W_GORY, WYTRWALOSC_NORM, badgeStatus, scoreEntries as score, type ScoreEntry } from "@/lib/badges";
 
 interface Props {
-  scored: ReturnType<typeof scoreEntries>;
+  scored: ReturnType<typeof score>;
+  entries: ScoreEntry[];
   onSetGoal: (n: number) => void;
 }
 
-export default function BadgesPanel({ scored, onSetGoal }: Props) {
+const MONTHS = ["sty", "lut", "mar", "kwi", "maj", "cze", "lip", "sie", "wrz", "paź", "lis", "gru"];
+
+export default function BadgesPanel({ scored, entries, onSetGoal }: Props) {
+  const stats = useMemo(() => {
+    const byMonth = new Map<string, number>();
+    const byYear = new Map<string, number>();
+    for (const e of entries) {
+      byMonth.set(e.day.slice(0, 7), (byMonth.get(e.day.slice(0, 7)) ?? 0) + e.points);
+    }
+    // Limit dzienny stosujemy też do wykresów (rocznie).
+    for (const y of new Set(entries.map((e) => e.day.slice(0, 4)))) {
+      byYear.set(y, score(entries.filter((e) => e.day.startsWith(y))).domestic + score(entries.filter((e) => e.day.startsWith(y))).foreign);
+    }
+    const months = [...byMonth].sort((a, b) => a[0].localeCompare(b[0])).slice(-12);
+    const best = [...byYear].sort((a, b) => b[1] - a[1])[0];
+    return { months, years: [...byYear].sort((a, b) => a[0].localeCompare(b[0])), best, max: Math.max(1, ...months.map((m) => m[1])) };
+  }, [entries]);
+
   const { earned, current, next, have, pct } = badgeStatus(scored.domestic, scored.foreign);
   const total = scored.domestic + scored.foreign;
 
@@ -60,6 +79,34 @@ export default function BadgesPanel({ scored, onSetGoal }: Props) {
           </div>
         )}
       </Card>
+
+      {stats.months.length > 0 && (
+        <Card title="Statystyki">
+          <div className="flex h-28 items-end gap-1">
+            {stats.months.map(([m, v]) => (
+              <div key={m} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1" title={`${m}: ${v} pkt`}>
+                <span className="text-[10px] text-zinc-500">{v}</span>
+                <div className="w-full rounded-t bg-green-600" style={{ height: `${(v / stats.max) * 80}%`, minHeight: 2 }} />
+                <span className="text-[10px] text-zinc-500">{MONTHS[Number(m.slice(5)) - 1]}</span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-zinc-500">Punkty w ostatnich miesiącach (po limicie dziennym tylko w sumach niżej).</p>
+          <table className="mt-3 w-full text-sm">
+            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              {stats.years.map(([y, v]) => (
+                <tr key={y}>
+                  <td className="py-1.5">{y}</td>
+                  <td className="py-1.5 text-right font-semibold tabular-nums">{v} pkt</td>
+                  <td className="py-1.5 pl-3 text-xs text-zinc-500">
+                    {stats.best && stats.best[0] === y && stats.years.length > 1 ? "najlepszy rok" : ""}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      )}
 
       <Card title="Odznaki GOT">
         <ul className="grid grid-cols-2 gap-2">

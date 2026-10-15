@@ -4,7 +4,8 @@ import { useState } from "react";
 import { Card } from "@/components/ui";
 import { parseGpx } from "@/lib/gpx/parse-gpx";
 import { matchActivity } from "@/lib/gpx/map-match";
-import type { Direction, MatchableSegment, MatchSummary } from "@/types/pttk";
+import { splitActivityByDay } from "@/lib/gpx/split-days";
+import type { Direction, MatchableSegment, MatchSummary, SegmentMatch } from "@/types/pttk";
 
 interface Props {
   /** Odcinki z wyznaczonym przebiegiem — wykrywanie jest automatyczne, bez wyboru grupy. */
@@ -42,7 +43,27 @@ export default function GpxImport({ segments, completedIds, onConfirm, onTrack, 
     try {
       const activity = parseGpx(await file.text(), file.name);
       onTrack?.(activity.points.map((p) => [p.lng, p.lat] as [number, number]));
-      const result = matchActivity(activity, segments, completedIds);
+      const parts = splitActivityByDay(activity);
+      const results = parts.map((a) => matchActivity(a, segments, completedIds));
+      // Scalenie: ten sam odcinek/kierunek liczymy raz (najwcześniejszy dzień).
+      const seen = new Map<string, SegmentMatch>();
+      results.forEach((r, i) => {
+        for (const m of r.matches) {
+          const k = `${m.segmentId}|${m.direction}`;
+          if (!seen.has(k)) seen.set(k, { ...m, day: parts.length > 1 ? parts[i].startedAt : undefined });
+        }
+      });
+      const matches = [...seen.values()];
+      const fresh = matches.filter((m) => !m.alreadyCompleted && !m.partial);
+      const result: MatchSummary = {
+        ...results[0],
+        activityId: activity.id,
+        startedAt: activity.startedAt,
+        matches,
+        newSegments: fresh.length,
+        totalGotPoints: fresh.reduce((a, m) => a + m.gotPoints, 0),
+        diagnostics: results[0].diagnostics,
+      };
       setSummary(result);
       onPreview?.([...new Set(result.matches.map((m) => m.segmentId))]);
     } catch (e) {
@@ -137,6 +158,7 @@ export default function GpxImport({ segments, completedIds, onConfirm, onTrack, 
                   {names.get(m.segmentId)}
                   <span className="block text-xs text-zinc-500">
                     {DIR_LABEL[m.direction]}
+                    {m.day && ` · ${new Date(m.day).toLocaleDateString("pl-PL")}`}
                     {m.alreadyCompleted && " · już zaliczony"}
                   </span>
                 </span>
@@ -188,7 +210,7 @@ export default function GpxImport({ segments, completedIds, onConfirm, onTrack, 
                   fresh.map((m) => ({
                     segmentId: m.segmentId,
                     direction: m.direction,
-                    completedAt: summary.startedAt,
+                    completedAt: m.day ?? summary.startedAt,
                   })),
                   summary.activityId,
                 );

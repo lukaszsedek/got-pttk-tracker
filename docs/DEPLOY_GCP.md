@@ -109,3 +109,15 @@ gcloud secrets delete database-url
 - Overpass API (Moduł 2) jest wołane z serwera Cloud Run — publiczne instancje mają limity; do większego importu użyj własnego mirrora lub uruchom import lokalnie.
 - Kafelki OSM w mapie służą do POC; w produkcji użyj własnego dostawcy kafelków (polityka użycia OSM).
 - Cold start Cloud Run jest dopuszczalny w POC; `--min-instances 1` go usuwa za dodatkowy koszt.
+
+## Dane, kopie zapasowe i dostęp
+
+- **Dane odcinków** ładujesz tak samo jak lokalnie: `npm run db:migrate` i `npm run db:import-got`
+  z `DATABASE_URL` wskazującym na Cloud SQL (np. przez Cloud SQL Auth Proxy).
+- **Kopia zaliczeń i planu:** w aplikacji, zakładka Książeczka → „Pobierz kopię (JSON)”. Przywrócenie:
+  „Przywróć kopię…” (scalanie; istniejące wpisy zostają).
+- **Hasło:** ustaw `APP_PASSWORD` (opcjonalnie `APP_USER`, domyślnie `got`) w zmiennych Cloud Run —
+  aplikacja zażąda logowania HTTP Basic. Bez zmiennej jest otwarta.
+  ```bash
+  gcloud run services update got-pttk --region $REGION --set-env-vars APP_PASSWORD='tajne-haslo'
+  ```

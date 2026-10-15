@@ -84,3 +84,9 @@ input:focus {
     color: #a1a1aa;
   }
 }
+
+.got-hover .maplibregl-popup-content {
+  padding: 6px 9px;
+  border-radius: 8px;
+  pointer-events: none;
+}

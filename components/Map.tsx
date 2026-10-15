@@ -15,6 +15,18 @@ interface MapProps {
   selectedId?: string | null;
   /** Odcinki dodane do planu. */
   planIds?: ReadonlySet<string>;
+  /** Klucze "<id>|<kierunek>" zaliczonych kierunków (do akcji w popupie). */
+  doneKeys?: ReadonlySet<string>;
+  planKeys?: ReadonlySet<string>;
+  /** Częściowe dopasowania z podglądu importu GPX. */
+  partialIds?: ReadonlySet<string>;
+  minPoints?: number;
+  regionFilter?: string;
+  /** Akcja z popupu: zaliczenie kierunku / plan / otwarcie szczegółów. */
+  onQuick?: (id: string, action: "forward" | "backward" | "plan" | "open") => void;
+  /** Stan widoku do zapamiętania (środek, zoom). */
+  initialView?: { center: [number, number]; zoom: number } | null;
+  onViewChange?: (v: { center: [number, number]; zoom: number }) => void;
   showDone?: boolean;
   showTodo?: boolean;
   showTrack?: boolean;
@@ -45,6 +57,7 @@ function collection(
   completed: ReadonlySet<string>,
   highlight: ReadonlySet<string>,
   plan: ReadonlySet<string> = new Set(),
+  partial: ReadonlySet<string> = new Set(),
 ): FeatureCollection<LineString> {
   return {
     type: "FeatureCollection",
@@ -59,6 +72,9 @@ function collection(
           completed: completed.has(s.id),
           highlighted: highlight.has(s.id),
           planned: plan.has(s.id),
+          partial: partial.has(s.id),
+          maxpts: Math.max(s.gotPointsForward, s.gotPointsBackward),
+          regionKey: s.regionName || s.groupId,
           color: s.trailColor ? COLORS[s.trailColor] : "#71717a",
           pf: s.gotPointsForward,
           pb: s.gotPointsBackward,
@@ -82,6 +98,14 @@ export default function Map({
   selectedId = null,
   highlightIds,
   planIds,
+  doneKeys,
+  planKeys,
+  partialIds,
+  minPoints = 0,
+  regionFilter = "",
+  onQuick,
+  initialView = null,
+  onViewChange,
   showDone = true,
   showTodo = true,
   showTrack = true,
@@ -92,9 +116,9 @@ export default function Map({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const readyRef = useRef(false);
   const fittedRef = useRef(false);
-  const latest = useRef({ segments, completedIds, highlightIds, planIds, track, selectedId, onSelect });
+  const latest = useRef({ segments, completedIds, highlightIds, planIds, partialIds, doneKeys, planKeys, track, selectedId, onSelect, onQuick, onViewChange });
   useEffect(() => {
-    latest.current = { segments, completedIds, highlightIds, planIds, track, selectedId, onSelect };
+    latest.current = { segments, completedIds, highlightIds, planIds, partialIds, doneKeys, planKeys, track, selectedId, onSelect, onQuick, onViewChange };
   });
 
   const fitAll = (map: maplibregl.Map, segs: MapSegment[]) => {
@@ -107,10 +131,11 @@ export default function Map({
     if (!containerRef.current) return;
     const map = new maplibregl.Map({
       container: containerRef.current,
-      center: [19.95, 49.25],
-      zoom: 10,
+      center: initialView?.center ?? [19.95, 49.25],
+      zoom: initialView?.zoom ?? 10,
       style: {
         version: 8,
+        glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
         sources: {
           osm: {
             type: "raster",
@@ -125,12 +150,22 @@ export default function Map({
     });
     mapRef.current = map;
     map.addControl(new maplibregl.NavigationControl(), "top-right");
+    map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-right");
+    if (initialView) fittedRef.current = true;
+    map.on("moveend", () => {
+      const c = map.getCenter();
+      latest.current.onViewChange?.({ center: [c.lng, c.lat], zoom: map.getZoom() });
+    });
+    // Mapa dopasowuje się do zmiany rozmiaru kontenera (panel boczny).
+    const ro = new ResizeObserver(() => map.resize());
+    ro.observe(containerRef.current);
+    map.once("remove", () => ro.disconnect());
 
     map.on("load", () => {
       const l = latest.current;
       map.addSource(SRC, {
         type: "geojson",
-        data: collection(l.segments, l.completedIds, l.highlightIds ?? new Set(), l.planIds),
+        data: collection(l.segments, l.completedIds, l.highlightIds ?? new Set(), l.planIds, l.partialIds),
       });
       map.addSource(TRACK, {
         type: "geojson",
@@ -173,6 +208,14 @@ export default function Map({
         paint: { "line-color": "#9333ea", "line-width": 9, "line-opacity": 0.7 },
       });
       map.addLayer({
+        id: "seg-partial",
+        type: "line",
+        source: SRC,
+        filter: ["==", ["get", "partial"], true],
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-color": "#ec4899", "line-width": 9, "line-opacity": 0.75 },
+      });
+      map.addLayer({
         id: "seg-highlight",
         type: "line",
         source: SRC,
@@ -189,6 +232,20 @@ export default function Map({
         paint: { "line-color": "#f97316", "line-width": 10 },
       });
       map.addLayer({
+        id: "seg-label",
+        type: "symbol",
+        source: SRC,
+        minzoom: 13,
+        layout: {
+          "symbol-placement": "line",
+          "text-field": ["get", "name"],
+          "text-font": ["Open Sans Regular"],
+          "text-size": 11,
+          "text-max-angle": 30,
+        },
+        paint: { "text-color": "#18181b", "text-halo-color": "#ffffff", "text-halo-width": 1.6 },
+      });
+      map.addLayer({
         id: "track-casing",
         type: "line",
         source: TRACK,
@@ -203,26 +260,58 @@ export default function Map({
         paint: { "line-color": "#0ea5e9", "line-width": 3.5, "line-dasharray": [2, 1.2] },
       });
 
+      const hover = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 8, className: "got-hover" });
+      map.on("mousemove", "seg-line", (e) => {
+        const f = e.features?.[0];
+        if (!f) return;
+        const p = f.properties as Record<string, string | number>;
+        map.getCanvas().style.cursor = "pointer";
+        hover
+          .setLngLat(e.lngLat)
+          .setHTML(
+            `<div style="font:12px system-ui;color:#111"><strong>${esc(String(p.name))}</strong><br/>${p.pf}/${p.pb} pkt · ${p.km} km</div>`,
+          )
+          .addTo(map);
+      });
+      map.on("mouseleave", "seg-line", () => {
+        map.getCanvas().style.cursor = "";
+        hover.remove();
+      });
+
       map.on("click", "seg-line", (e) => {
         const f = e.features?.[0];
         if (!f) return;
         const p = f.properties as Record<string, string | number | boolean>;
-        latest.current.onSelect?.(String(p.id));
-        new maplibregl.Popup({ closeButton: true })
+        const id = String(p.id);
+        hover.remove();
+        latest.current.onSelect?.(id);
+        const l2 = latest.current;
+        const [from, to] = String(p.name).split(" – ");
+        const el = document.createElement("div");
+        el.style.cssText = "font:13px system-ui;color:#111;min-width:210px";
+        el.innerHTML = `<strong>${esc(String(p.name))}</strong><br/><span style="color:#666">${esc(String(p.region))}</span><br/>${p.km} km`;
+        const row = (label: string, done: boolean, action: "forward" | "backward" | "plan", pts?: number) => {
+          const btn = document.createElement("button");
+          btn.textContent = done ? `✓ ${label}` : pts !== undefined ? `${label} (${pts} pkt)` : label;
+          btn.disabled = action !== "plan" && done;
+          btn.style.cssText =
+            "display:block;width:100%;margin-top:6px;padding:6px 8px;border-radius:8px;border:1px solid #d4d4d8;background:" +
+            (done ? "#dcfce7" : "#fff") +
+            ";cursor:pointer;text-align:left;font:inherit";
+          btn.onclick = () => {
+            latest.current.onQuick?.(id, action);
+            popup.remove();
+          };
+          el.appendChild(btn);
+        };
+        row(`${from} → ${to}`, !!l2.doneKeys?.has(`${id}|forward`), "forward", Number(p.pf));
+        row(`${to} → ${from}`, !!l2.doneKeys?.has(`${id}|backward`), "backward", Number(p.pb));
+        row(l2.planKeys?.has(`${id}|forward`) || l2.planKeys?.has(`${id}|backward`) ? "Usuń z planu" : "Dodaj do planu", false, "plan");
+        const popup = new maplibregl.Popup({ closeButton: true, maxWidth: "280px" })
           .setLngLat(e.lngLat)
-          .setHTML(
-            `<div style="font:13px system-ui;color:#111">
-              <strong>${esc(String(p.name))}</strong><br/>
-              <span style="color:#666">${esc(String(p.region))}</span><br/>
-              GOT: ${p.pf} pkt tam / ${p.pb} pkt z powrotem<br/>
-              Dystans: ${p.km} km<br/>
-              Status: ${p.completed ? "✅ zaliczony" : "⬜ do zrobienia"}
-            </div>`,
-          )
+          .setDOMContent(el)
           .addTo(map);
       });
-      map.on("mouseenter", "seg-line", () => (map.getCanvas().style.cursor = "pointer"));
-      map.on("mouseleave", "seg-line", () => (map.getCanvas().style.cursor = ""));
 
       readyRef.current = true;
       if (l.track && l.track.length > 1) {
@@ -252,30 +341,35 @@ export default function Map({
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
     (map.getSource(SRC) as maplibregl.GeoJSONSource).setData(
-      collection(segments, completedIds, highlightIds ?? new Set(), planIds),
+      collection(segments, completedIds, highlightIds ?? new Set(), planIds, partialIds),
     );
     if (segments.length && !fittedRef.current && !track) {
       fitAll(map, segments);
       fittedRef.current = true;
     }
-  }, [segments, completedIds, highlightIds, planIds, track]);
+  }, [segments, completedIds, highlightIds, planIds, partialIds, track]);
 
   // Warstwy: przebyte / nieprzebyte / ślad.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
-    const none: maplibregl.FilterSpecification = ["==", ["get", "id"], "__none__"];
-    const done: maplibregl.FilterSpecification = ["==", ["get", "completed"], true];
-    const todo: maplibregl.FilterSpecification = ["==", ["get", "completed"], false];
-    const vis: maplibregl.FilterSpecification =
-      showDone && showTodo ? ["has", "id"] : showDone ? done : showTodo ? todo : none;
+    type Ex = maplibregl.ExpressionSpecification;
+    const none: Ex = ["==", ["get", "id"], "__none__"];
+    const done: Ex = ["==", ["get", "completed"], true];
+    const todo: Ex = ["==", ["get", "completed"], false];
+    const base: Ex = showDone && showTodo ? ["!=", ["get", "id"], "__none__"] : showDone ? done : showTodo ? todo : none;
+    const extra: Ex[] = [];
+    if (minPoints > 0) extra.push([">=", ["get", "maxpts"], minPoints]);
+    if (regionFilter) extra.push(["==", ["get", "regionKey"], regionFilter]);
+    const vis: Ex = extra.length ? ["all", base, ...extra] : base;
     map.setFilter("seg-casing", vis);
     map.setFilter("seg-line", vis);
-    map.setFilter("seg-done", showDone ? done : none);
+    map.setFilter("seg-label", vis);
+    map.setFilter("seg-done", showDone ? (extra.length ? ["all", done, ...extra] : done) : none);
     for (const id of ["track-casing", "track-line"]) {
       map.setLayoutProperty(id, "visibility", showTrack ? "visible" : "none");
     }
-  }, [showDone, showTodo, showTrack]);
+  }, [showDone, showTodo, showTrack, minPoints, regionFilter]);
 
   // Ślad aktywności.
   useEffect(() => {

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import BadgesPanel from "@/components/BadgesPanel";
+import BookletImport from "@/components/BookletImport";
 import BookletPanel from "@/components/BookletPanel";
 import GpxImport from "@/components/GpxImport";
 import RouteEditor from "@/components/RouteEditor";
@@ -39,7 +40,7 @@ const send = (method: string, body: unknown): RequestInit => ({
 });
 
 type Tab = "trasy" | "ksiazeczka" | "plan" | "odznaki" | "import";
-type Completion = { segmentId: string; direction: Direction; completedAt?: string };
+type Completion = { segmentId: string; direction: Direction; completedAt?: string; verifiedYear?: number };
 
 function readGoal(): number {
   try {
@@ -70,6 +71,7 @@ export default function MapLoader() {
   const [planMode, setPlanMode] = useState(false);
   const [editor, setEditor] = useState(false);
   const [palette, setPalette] = useState(false);
+  const [bookletImport, setBookletImport] = useState(false);
   const [drawFor, setDrawFor] = useState<string | null>(null);
   const [drawPts, setDrawPts] = useState<[number, number][]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -410,6 +412,7 @@ export default function MapLoader() {
           onSelect={select}
           onUndo={undo}
           onRestored={reload}
+          onImportBooklet={() => setBookletImport(true)}
         />
       )}
       {tab === "plan" && (
@@ -653,6 +656,16 @@ export default function MapLoader() {
           onSetDates={setDates}
           onUndo={undo}
           onClose={() => setEditor(false)}
+        />
+      )}
+      {bookletImport && segments && (
+        <BookletImport
+          segments={segments}
+          onImport={async (items) => {
+            await complete(items, undefined, true);
+            toast(`Zaimportowano ${items.length} wpisów do książeczki`);
+          }}
+          onClose={() => setBookletImport(false)}
         />
       )}
       {palette && segments && (

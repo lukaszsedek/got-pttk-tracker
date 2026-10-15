@@ -1,12 +1,13 @@
-import { DEFAULT_USER_ID, getPool } from "@/lib/db";
+import { DEFAULT_USER_ID, ensureSchema, getPool } from "@/lib/db";
 import type { Direction, UserTrailProgress } from "@/types/pttk";
 
 const isDir = (d: unknown): d is Direction => d === "forward" || d === "backward";
 
 export async function GET() {
   try {
+    await ensureSchema();
     const { rows } = await getPool().query(
-      `SELECT user_id, segment_id, direction, completed_at, source_activity_id
+      `SELECT user_id, segment_id, direction, completed_at, source_activity_id, verified_year
          FROM user_trail_progress WHERE user_id = $1 ORDER BY completed_at DESC`,
       [DEFAULT_USER_ID],
     );
@@ -16,6 +17,7 @@ export async function GET() {
       direction: r.direction,
       completedAt: new Date(r.completed_at).toISOString(),
       sourceActivityId: r.source_activity_id ?? undefined,
+      verifiedYear: r.verified_year ?? undefined,
     }));
     return Response.json({ progress });
   } catch (e) {
@@ -25,7 +27,7 @@ export async function GET() {
 
 interface PostBody {
   activityId?: string;
-  completions: { segmentId: string; direction: Direction; completedAt?: string }[];
+  completions: { segmentId: string; direction: Direction; completedAt?: string; verifiedYear?: number }[];
 }
 
 /** Dodaje zaliczenia (z GPX lub ręcznie). Ponowne zaliczenie tego samego odcinka/kierunku jest ignorowane. */
@@ -44,10 +46,11 @@ export async function POST(request: Request) {
     return Response.json({ error: "Wymagane: completions[{segmentId, direction, completedAt?}]" }, { status: 400 });
   }
   try {
+    await ensureSchema();
     const { rowCount } = await getPool().query(
-      `INSERT INTO user_trail_progress (user_id, segment_id, direction, completed_at, source_activity_id)
-       SELECT $1, c.segment_id, c.direction, COALESCE(c.at::timestamptz, now()), $5
-         FROM unnest($2::text[], $3::text[], $4::text[]) AS c(segment_id, direction, at)
+      `INSERT INTO user_trail_progress (user_id, segment_id, direction, completed_at, source_activity_id, verified_year)
+       SELECT $1, c.segment_id, c.direction, COALESCE(c.at::timestamptz, now()), $5, c.vy
+         FROM unnest($2::text[], $3::text[], $4::text[], $6::int[]) AS c(segment_id, direction, at, vy)
        ON CONFLICT DO NOTHING`,
       [
         DEFAULT_USER_ID,
@@ -55,6 +58,7 @@ export async function POST(request: Request) {
         items.map((c) => c.direction),
         items.map((c) => c.completedAt ?? null),
         body.activityId ?? null,
+        items.map((c) => (Number.isInteger(c.verifiedYear) ? c.verifiedYear : null)),
       ],
     );
     return Response.json({ inserted: rowCount });
@@ -82,10 +86,11 @@ export async function DELETE(request: Request) {
 
 /** Zmienia datę przejścia istniejącego zaliczenia. */
 export async function PATCH(request: Request) {
-  const { segmentId, direction, completedAt } = (await request.json()) as {
+  const { segmentId, direction, completedAt, verifiedYear } = (await request.json()) as {
     segmentId?: string;
     direction?: unknown;
     completedAt?: string;
+    verifiedYear?: number | null;
   };
   if (
     typeof segmentId !== "string" ||
@@ -96,10 +101,12 @@ export async function PATCH(request: Request) {
     return Response.json({ error: "Wymagane: segmentId, direction, completedAt" }, { status: 400 });
   }
   try {
+    await ensureSchema();
     const { rowCount } = await getPool().query(
-      `UPDATE user_trail_progress SET completed_at = $4::timestamptz
+      `UPDATE user_trail_progress SET completed_at = $4::timestamptz,
+              verified_year = CASE WHEN $5::boolean THEN $6::int ELSE verified_year END
         WHERE user_id = $1 AND segment_id = $2 AND direction = $3`,
-      [DEFAULT_USER_ID, segmentId, direction, completedAt],
+      [DEFAULT_USER_ID, segmentId, direction, completedAt, verifiedYear !== undefined, verifiedYear ?? null],
     );
     return Response.json({ updated: rowCount });
   } catch (e) {

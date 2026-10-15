@@ -37,6 +37,8 @@ export interface UserTrailProgress {
   completedAt: string; // ISO 8601
   direction: Direction;
   sourceActivityId?: string;
+  /** Rok weryfikacji wpisu w książeczce (komisja GOT). */
+  verifiedYear?: number;
 }
 
 /** Punkt śladu GPX po wstępnej obróbce. */

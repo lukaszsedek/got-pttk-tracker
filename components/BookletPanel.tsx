@@ -14,9 +14,11 @@ interface Props {
   onUndo: (segmentId: string, direction: "forward" | "backward") => void;
   /** Wywoływane po przywróceniu kopii — odśwież dane. */
   onRestored: () => void;
+  /** Otwiera import istniejącej książeczki. */
+  onImportBooklet: () => void;
 }
 
-export default function BookletPanel({ progress, segById, goal, onGoalChange, onSelect, onUndo, onRestored }: Props) {
+export default function BookletPanel({ progress, segById, goal, onGoalChange, onSelect, onUndo, onRestored, onImportBooklet }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [restoreMsg, setRestoreMsg] = useState<string | null>(null);
   const restore = async (file: File) => {
@@ -59,7 +61,7 @@ export default function BookletPanel({ progress, segById, goal, onGoalChange, on
   const pct = goal > 0 ? Math.min(100, (total / goal) * 100) : 0;
 
   const exportCsv = () => {
-    const head = ["Data", "Region", "Odcinek", "Kierunek", "Punkty GOT", "Źródło"];
+    const head = ["Data", "Region", "Odcinek", "Kierunek", "Punkty GOT", "Źródło", "Rok weryfikacji"];
     const body = [...rows]
       .sort((a, b) => a.p.completedAt.localeCompare(b.p.completedAt))
       .map((r) => [
@@ -69,8 +71,9 @@ export default function BookletPanel({ progress, segById, goal, onGoalChange, on
         directionLabel(r.s.name, r.p.direction),
         r.points,
         r.p.sourceActivityId ? "GPX" : "ręcznie",
+        r.p.verifiedYear ?? "",
       ]);
-    downloadText("ksiazeczka-got.csv", toCsv([head, ...body, [], ["", "", "", "Razem", total, ""]]));
+    downloadText("ksiazeczka-got.csv", toCsv([head, ...body, [], ["", "", "", "Razem", total, "", ""]]));
   };
 
   const printBooklet = () => {
@@ -132,6 +135,12 @@ th{background:#eee}.n{text-align:right}.stamp{width:110px}tfoot td{font-weight:7
           className="mt-3 w-full rounded-xl border border-zinc-300 py-2 text-sm font-medium disabled:opacity-40 dark:border-zinc-700"
         >
           Eksportuj do CSV (do przepisania do książeczki)
+        </button>
+        <button
+          onClick={onImportBooklet}
+          className="mt-2 w-full rounded-xl bg-green-600 py-2 text-sm font-semibold text-white hover:bg-green-700"
+        >
+          Importuj istniejącą książeczkę…
         </button>
         <button
           onClick={printBooklet}
@@ -215,6 +224,7 @@ th{background:#eee}.n{text-align:right}.stamp{width:110px}tfoot td{font-weight:7
                         <span className="text-xs text-zinc-500">
                           {s.regionName || s.groupId}
                           {p.sourceActivityId ? " · GPX" : " · ręcznie"}
+                          {p.verifiedYear ? ` · zweryf. ${p.verifiedYear}` : ""}
                         </span>
                       </button>
                     </td>

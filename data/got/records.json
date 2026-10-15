@@ -1088,7 +1088,7 @@
   "groupCode": "T.02",
   "regionName": "TATRY ZACHODNIE",
   "sourcePage": "tatry_zachodnie.html",
-  "destination": "BZ Murowanica - Dom Turysty PTTK 3/3",
+  "destination": "Polana Biały Potok",
   "section": "Droga \"Pod Reglami\" / Gronik - Roma 3/3 / Zwiedzanie Doliny za Bramką 1/1 / Roma - Dolina Białego 2/2 / Zwiedzanie Doliny Ku Dziurze 1/1 / Dolina Białego - Murowanica 2/2",
   "trailColors": [
    "Green"
@@ -1097,15 +1097,16 @@
   "pointsForward": 1,
   "pointsBackward": 1,
   "pointsRaw": "1/1",
-  "kind": "attraction",
-  "rawName": "Siwa Polana - Polana Biały Potok"
+  "kind": "edge",
+  "rawName": "Siwa Polana - Polana Biały Potok",
+  "origin": "Siwa Polana"
  },
  {
   "id": "tatry_zachodnie:1:3",
   "groupCode": "T.02",
   "regionName": "TATRY ZACHODNIE",
   "sourcePage": "tatry_zachodnie.html",
-  "destination": "BZ Murowanica - Dom Turysty PTTK 3/3",
+  "destination": "Kiry",
   "section": "Droga \"Pod Reglami\" / Gronik - Roma 3/3 / Zwiedzanie Doliny za Bramką 1/1 / Roma - Dolina Białego 2/2 / Zwiedzanie Doliny Ku Dziurze 1/1 / Dolina Białego - Murowanica 2/2",
   "trailColors": [
    "Green"
@@ -1114,15 +1115,16 @@
   "pointsForward": 1,
   "pointsBackward": 1,
   "pointsRaw": "1/1",
-  "kind": "attraction",
-  "rawName": "Polana Biały Potok - Kiry"
+  "kind": "edge",
+  "rawName": "Polana Biały Potok - Kiry",
+  "origin": "Polana Biały Potok"
  },
  {
   "id": "tatry_zachodnie:1:4",
   "groupCode": "T.02",
   "regionName": "TATRY ZACHODNIE",
   "sourcePage": "tatry_zachodnie.html",
-  "destination": "BZ Murowanica - Dom Turysty PTTK 3/3",
+  "destination": "Roma",
   "section": "Droga \"Pod Reglami\" / Gronik - Roma 3/3 / Zwiedzanie Doliny za Bramką 1/1 / Roma - Dolina Białego 2/2 / Zwiedzanie Doliny Ku Dziurze 1/1 / Dolina Białego - Murowanica 2/2",
   "trailColors": [
    "Black"
@@ -1131,8 +1133,9 @@
   "pointsForward": 3,
   "pointsBackward": 3,
   "pointsRaw": "3/3",
-  "kind": "attraction",
-  "rawName": "Gronik - Roma"
+  "kind": "edge",
+  "rawName": "Gronik - Roma",
+  "origin": "Gronik"
  },
  {
   "id": "tatry_zachodnie:1:5",
@@ -1156,7 +1159,7 @@
   "groupCode": "T.02",
   "regionName": "TATRY ZACHODNIE",
   "sourcePage": "tatry_zachodnie.html",
-  "destination": "BZ Murowanica - Dom Turysty PTTK 3/3",
+  "destination": "Dolina Białego",
   "section": "Droga \"Pod Reglami\" / Gronik - Roma 3/3 / Zwiedzanie Doliny za Bramką 1/1 / Roma - Dolina Białego 2/2 / Zwiedzanie Doliny Ku Dziurze 1/1 / Dolina Białego - Murowanica 2/2",
   "trailColors": [
    "Black"
@@ -1165,8 +1168,9 @@
   "pointsForward": 2,
   "pointsBackward": 2,
   "pointsRaw": "2/2",
-  "kind": "attraction",
-  "rawName": "Roma - Dolina Białego"
+  "kind": "edge",
+  "rawName": "Roma - Dolina Białego",
+  "origin": "Roma"
  },
  {
   "id": "tatry_zachodnie:1:7",
@@ -1190,7 +1194,7 @@
   "groupCode": "T.02",
   "regionName": "TATRY ZACHODNIE",
   "sourcePage": "tatry_zachodnie.html",
-  "destination": "BZ Murowanica - Dom Turysty PTTK 3/3",
+  "destination": "Murowanica",
   "section": "Droga \"Pod Reglami\" / Gronik - Roma 3/3 / Zwiedzanie Doliny za Bramką 1/1 / Roma - Dolina Białego 2/2 / Zwiedzanie Doliny Ku Dziurze 1/1 / Dolina Białego - Murowanica 2/2",
   "trailColors": [
    "Black"
@@ -1199,23 +1203,25 @@
   "pointsForward": 2,
   "pointsBackward": 2,
   "pointsRaw": "2/2",
-  "kind": "attraction",
-  "rawName": "Dolina Białego - Murowanica"
+  "kind": "edge",
+  "rawName": "Dolina Białego - Murowanica",
+  "origin": "Dolina Białego"
  },
  {
   "id": "tatry_zachodnie:1:9",
   "groupCode": "T.02",
   "regionName": "TATRY ZACHODNIE",
   "sourcePage": "tatry_zachodnie.html",
-  "destination": "BZ Murowanica - Dom Turysty PTTK 3/3",
+  "destination": "Dom Turysty PTTK",
   "section": "Droga \"Pod Reglami\" / Gronik - Roma 3/3 / Zwiedzanie Doliny za Bramką 1/1 / Roma - Dolina Białego 2/2 / Zwiedzanie Doliny Ku Dziurze 1/1 / Dolina Białego - Murowanica 2/2",
   "trailColors": [],
   "unmarked": true,
   "pointsForward": 3,
   "pointsBackward": 3,
   "pointsRaw": "3/3",
-  "kind": "attraction",
-  "rawName": "Murowanica - Dom Turysty PTTK"
+  "kind": "edge",
+  "rawName": "Murowanica - Dom Turysty PTTK",
+  "origin": "Murowanica"
  },
  {
   "id": "tatry_zachodnie:2:1",
@@ -3336,15 +3342,16 @@
   "groupCode": "T.03",
   "regionName": "PODTATRZE",
   "sourcePage": "podtatrze.html",
-  "destination": "Rafaczyńska Grapa",
+  "destination": "Harenda",
   "destinationElevationM": "973",
   "trailColors": [],
   "unmarked": false,
   "pointsForward": 4,
   "pointsBackward": 5,
   "pointsRaw": "4/5",
-  "kind": "attraction",
-  "rawName": "Domu Turysty PTTK - Harenda"
+  "kind": "edge",
+  "rawName": "Domu Turysty PTTK - Harenda",
+  "origin": "Domu Turysty PTTK"
  },
  {
   "id": "podtatrze:8:1",
@@ -3396,21 +3403,22 @@
   "groupCode": "T.03",
   "regionName": "PODTATRZE",
   "sourcePage": "podtatrze.html",
-  "destination": "Poronin",
+  "destination": "Brzeziny",
   "trailColors": [],
   "unmarked": true,
   "pointsForward": 4,
   "pointsBackward": 3,
   "pointsRaw": "4/3",
-  "kind": "attraction",
-  "rawName": "Murzasichle - Brzeziny"
+  "kind": "edge",
+  "rawName": "Murzasichle - Brzeziny",
+  "origin": "Murzasichle"
  },
  {
   "id": "podtatrze:8:5",
   "groupCode": "T.03",
   "regionName": "PODTATRZE",
   "sourcePage": "podtatrze.html",
-  "destination": "Poronin",
+  "destination": "Zazadnia",
   "trailColors": [
    "Blue"
   ],
@@ -3418,8 +3426,9 @@
   "pointsForward": 2,
   "pointsBackward": 2,
   "pointsRaw": "2/2",
-  "kind": "attraction",
-  "rawName": "Małe Ciche - Zazadnia"
+  "kind": "edge",
+  "rawName": "Małe Ciche - Zazadnia",
+  "origin": "Małe Ciche"
  },
  {
   "id": "podtatrze:9:1",
@@ -3524,7 +3533,7 @@
   "groupCode": "T.03",
   "regionName": "PODTATRZE",
   "sourcePage": "podtatrze.html",
-  "destination": "Bukowina Tatrzańska - Klin",
+  "destination": "Dolina Filipka",
   "trailColors": [
    "Blue"
   ],
@@ -3532,8 +3541,9 @@
   "pointsForward": 1,
   "pointsBackward": 1,
   "pointsRaw": "1/1",
-  "kind": "attraction",
-  "rawName": "Zazadnia - Dolina Filipka"
+  "kind": "edge",
+  "rawName": "Zazadnia - Dolina Filipka",
+  "origin": "Zazadnia"
  },
  {
   "id": "podtatrze:11:1",

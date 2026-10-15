@@ -6,21 +6,31 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:up": "docker compose up -d",
+    "db:migrate": "tsx scripts/db.ts migrate",
+    "db:seed": "tsx scripts/db.ts seed"
   },
   "dependencies": {
+    "@turf/turf": "^7.4.0",
+    "maplibre-gl": "^6.14.0",
     "next": "16.4.1",
+    "pg": "^8.23.1",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
+    "@types/geojson": "^7946.0.16",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^18.0.8",
     "eslint": "^9",
     "eslint-config-next": "16.4.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }

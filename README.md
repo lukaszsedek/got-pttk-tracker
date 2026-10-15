@@ -34,3 +34,14 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Baza danych (PostgreSQL + PostGIS)
+
+```bash
+cp .env.example .env.local   # DATABASE_URL
+cp .env.example .env         # dla skryptów db:* (dotenv)
+npm run db:up                # docker compose up -d
+npm run db:migrate
+npm run db:seed              # przykładowe odcinki T.01
+npm run dev
+```

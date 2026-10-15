@@ -13,6 +13,11 @@ interface MapProps {
   completedIds: ReadonlySet<string>;
   /** Odcinek wybrany z listy — podświetlany i wycentrowany. */
   selectedId?: string | null;
+  /** Odcinki dodane do planu. */
+  planIds?: ReadonlySet<string>;
+  showDone?: boolean;
+  showTodo?: boolean;
+  showTrack?: boolean;
   /** Odcinki wykryte w podglądzie importu GPX. */
   highlightIds?: ReadonlySet<string>;
   /** Ślad aktywności [lng, lat][] — rysowany na niebiesko. */
@@ -39,6 +44,7 @@ function collection(
   segments: MapSegment[],
   completed: ReadonlySet<string>,
   highlight: ReadonlySet<string>,
+  plan: ReadonlySet<string> = new Set(),
 ): FeatureCollection<LineString> {
   return {
     type: "FeatureCollection",
@@ -52,6 +58,7 @@ function collection(
           region: s.regionName,
           completed: completed.has(s.id),
           highlighted: highlight.has(s.id),
+          planned: plan.has(s.id),
           color: s.trailColor ? COLORS[s.trailColor] : "#71717a",
           pf: s.gotPointsForward,
           pb: s.gotPointsBackward,
@@ -74,6 +81,10 @@ export default function Map({
   completedIds,
   selectedId = null,
   highlightIds,
+  planIds,
+  showDone = true,
+  showTodo = true,
+  showTrack = true,
   track = null,
   onSelect,
 }: MapProps) {
@@ -81,9 +92,9 @@ export default function Map({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const readyRef = useRef(false);
   const fittedRef = useRef(false);
-  const latest = useRef({ segments, completedIds, highlightIds, track, selectedId, onSelect });
+  const latest = useRef({ segments, completedIds, highlightIds, planIds, track, selectedId, onSelect });
   useEffect(() => {
-    latest.current = { segments, completedIds, highlightIds, track, selectedId, onSelect };
+    latest.current = { segments, completedIds, highlightIds, planIds, track, selectedId, onSelect };
   });
 
   const fitAll = (map: maplibregl.Map, segs: MapSegment[]) => {
@@ -119,7 +130,7 @@ export default function Map({
       const l = latest.current;
       map.addSource(SRC, {
         type: "geojson",
-        data: collection(l.segments, l.completedIds, l.highlightIds ?? new Set()),
+        data: collection(l.segments, l.completedIds, l.highlightIds ?? new Set(), l.planIds),
       });
       map.addSource(TRACK, {
         type: "geojson",
@@ -152,6 +163,14 @@ export default function Map({
           "line-width": 4,
           "line-opacity": ["case", ["get", "completed"], 1, 0.8],
         },
+      });
+      map.addLayer({
+        id: "seg-plan",
+        type: "line",
+        source: SRC,
+        filter: ["==", ["get", "planned"], true],
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-color": "#9333ea", "line-width": 9, "line-opacity": 0.7 },
       });
       map.addLayer({
         id: "seg-highlight",
@@ -233,13 +252,30 @@ export default function Map({
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
     (map.getSource(SRC) as maplibregl.GeoJSONSource).setData(
-      collection(segments, completedIds, highlightIds ?? new Set()),
+      collection(segments, completedIds, highlightIds ?? new Set(), planIds),
     );
     if (segments.length && !fittedRef.current && !track) {
       fitAll(map, segments);
       fittedRef.current = true;
     }
-  }, [segments, completedIds, highlightIds, track]);
+  }, [segments, completedIds, highlightIds, planIds, track]);
+
+  // Warstwy: przebyte / nieprzebyte / ślad.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    const none: maplibregl.FilterSpecification = ["==", ["get", "id"], "__none__"];
+    const done: maplibregl.FilterSpecification = ["==", ["get", "completed"], true];
+    const todo: maplibregl.FilterSpecification = ["==", ["get", "completed"], false];
+    const vis: maplibregl.FilterSpecification =
+      showDone && showTodo ? ["has", "id"] : showDone ? done : showTodo ? todo : none;
+    map.setFilter("seg-casing", vis);
+    map.setFilter("seg-line", vis);
+    map.setFilter("seg-done", showDone ? done : none);
+    for (const id of ["track-casing", "track-line"]) {
+      map.setLayoutProperty(id, "visibility", showTrack ? "visible" : "none");
+    }
+  }, [showDone, showTodo, showTrack]);
 
   // Ślad aktywności.
   useEffect(() => {

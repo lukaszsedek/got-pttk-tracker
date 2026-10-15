@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
+import BadgesPanel from "@/components/BadgesPanel";
 import BookletPanel from "@/components/BookletPanel";
 import GpxImport from "@/components/GpxImport";
 import PlanPanel from "@/components/PlanPanel";
@@ -9,6 +10,7 @@ import SegmentDetail from "@/components/SegmentDetail";
 import SegmentList from "@/components/SegmentList";
 import { Card } from "@/components/ui";
 import type { MapSegment } from "@/components/Map";
+import { badgeStatus } from "@/lib/badges";
 import { dirPoints, key } from "@/lib/booklet";
 import type { Direction, PlanItem, SegmentRow, UserTrailProgress } from "@/types/pttk";
 
@@ -32,7 +34,7 @@ const send = (method: string, body: unknown): RequestInit => ({
   body: JSON.stringify(body),
 });
 
-type Tab = "trasy" | "ksiazeczka" | "plan" | "import";
+type Tab = "trasy" | "ksiazeczka" | "plan" | "odznaki" | "import";
 type Completion = { segmentId: string; direction: Direction; completedAt?: string };
 
 function readGoal(): number {
@@ -53,6 +55,10 @@ export default function MapLoader() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("trasy");
   const [goal, setGoal] = useState<number>(readGoal);
+  const [showDone, setShowDone] = useState(true);
+  const [showTodo, setShowTodo] = useState(true);
+  const [showTrack, setShowTrack] = useState(true);
+  const [planMode, setPlanMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -150,10 +156,27 @@ export default function MapLoader() {
     if (id) setTab("trasy");
   };
 
+  // W trybie planowania klik na mapie dodaje/usuwa odcinek z planu
+  // (kierunek z większą liczbą punktów, o ile nie jest już zaliczony).
+  const mapSelect = (id: string) => {
+    if (!(planMode && tab === "plan")) return select(id);
+    const s = segById.get(id);
+    if (!s) return;
+    const existing = plan.find((p) => p.segmentId === id);
+    if (existing) return void togglePlan(id, existing.direction);
+    const done = new Set(progress.filter((p) => p.segmentId === id).map((p) => p.direction));
+    const order: Direction[] =
+      s.gotPointsForward >= s.gotPointsBackward ? ["forward", "backward"] : ["backward", "forward"];
+    void togglePlan(id, order.find((d) => !done.has(d)) ?? order[0]);
+  };
+  const planIds = plannedIds;
+  const badge = badgeStatus(points).current;
+
   const tabs: [Tab, string][] = [
     ["trasy", "Trasy"],
     ["ksiazeczka", `Książeczka (${progress.length})`],
     ["plan", `Plan (${plan.length})`],
+    ["odznaki", "Odznaki"],
     ["import", "Import GPX"],
   ];
 
@@ -170,6 +193,7 @@ export default function MapLoader() {
         {segments && (
           <dl className="flex gap-2 text-center">
             <Stat label="Punkty GOT" value={String(points)} />
+            <Stat label="Odznaka" value={badge ? `${badge.icon} ${badge.name}` : "—"} />
             <Stat label="Zaliczone odcinki" value={`${completedIds.size}/${segments.length}`} />
             <Stat label="W planie" value={String(plan.length)} />
           </dl>
@@ -203,14 +227,26 @@ export default function MapLoader() {
               completedIds={completedIds}
               selectedId={selectedId}
               highlightIds={highlight}
+              planIds={planIds}
+              showDone={showDone}
+              showTodo={showTodo}
+              showTrack={showTrack}
               track={track}
-              onSelect={select}
+              onSelect={mapSelect}
             />
-            <Legend />
+            <Legend
+              showDone={showDone}
+              showTodo={showTodo}
+              showTrack={showTrack}
+              onDone={setShowDone}
+              onTodo={setShowTodo}
+              onTrack={setShowTrack}
+              hasTrack={!!track}
+            />
           </main>
 
           <aside className="order-2 flex shrink-0 flex-col gap-4 md:order-1 md:w-[26rem] md:overflow-y-auto md:pr-1">
-            <nav className="grid grid-cols-2 gap-1 rounded-xl bg-zinc-200/70 p-1 text-sm font-medium dark:bg-zinc-800">
+            <nav className="grid grid-cols-3 gap-1 rounded-xl bg-zinc-200/70 p-1 text-sm font-medium dark:bg-zinc-800">
               {tabs.map(([id, label]) => (
                 <button
                   key={id}
@@ -268,10 +304,17 @@ export default function MapLoader() {
                 goal={goal}
                 onSelect={select}
                 onRemove={togglePlan}
+                onToggle={togglePlan}
+                planMode={planMode}
+                onPlanMode={setPlanMode}
                 onCompleteAll={(items, at) =>
                   complete(items.map((i) => ({ ...i, completedAt: at })))
                 }
               />
+            )}
+
+            {tab === "odznaki" && (
+              <BadgesPanel progress={progress} segById={segById} onSetGoal={changeGoal} />
             )}
 
             {tab === "import" && (
@@ -302,21 +345,30 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Legend() {
+function Legend(props: {
+  showDone: boolean;
+  showTodo: boolean;
+  showTrack: boolean;
+  hasTrack: boolean;
+  onDone: (v: boolean) => void;
+  onTodo: (v: boolean) => void;
+  onTrack: (v: boolean) => void;
+}) {
+  const row = (checked: boolean, on: (v: boolean) => void, swatch: string, label: string) => (
+    <label className="flex cursor-pointer items-center gap-2">
+      <input type="checkbox" checked={checked} onChange={(e) => on(e.target.checked)} />
+      <span className={`h-1.5 w-6 rounded-full ${swatch}`} />
+      {label}
+    </label>
+  );
   return (
-    <div className="pointer-events-none absolute bottom-4 left-4 flex flex-col gap-1.5 rounded-xl bg-white/90 px-3 py-2 text-xs shadow-md backdrop-blur dark:bg-zinc-900/90">
-      <span className="flex items-center gap-2">
-        <span className="h-1.5 w-6 rounded-full bg-green-500/60" /> zaliczony (zielona poświata)
-      </span>
-      <span className="flex items-center gap-2">
-        <span className="h-1.5 w-6 rounded-full bg-gradient-to-r from-red-600 via-blue-600 to-green-600" /> kolor
-        znakowania szlaku
-      </span>
-      <span className="flex items-center gap-2">
-        <span className="h-1.5 w-6 rounded-full bg-amber-500" /> wykryty / wybrany
-      </span>
-      <span className="flex items-center gap-2">
-        <span className="h-1.5 w-6 rounded-full bg-sky-500" /> Twój ślad GPX
+    <div className="absolute bottom-4 left-4 flex flex-col gap-1.5 rounded-xl bg-white/95 px-3 py-2 text-xs text-zinc-900 shadow-md backdrop-blur dark:bg-zinc-900/95 dark:text-zinc-100">
+      <strong className="text-[10px] tracking-wide text-zinc-500 uppercase">Warstwy</strong>
+      {row(props.showDone, props.onDone, "bg-green-500", "Przebyte")}
+      {row(props.showTodo, props.onTodo, "bg-gradient-to-r from-red-600 via-blue-600 to-green-600", "Nieprzebyte")}
+      {props.hasTrack && row(props.showTrack, props.onTrack, "bg-sky-500", "Ślad GPX")}
+      <span className="flex items-center gap-2 pl-6">
+        <span className="h-1.5 w-6 rounded-full bg-purple-600" /> w planie
       </span>
     </div>
   );

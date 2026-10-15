@@ -88,6 +88,26 @@ const ALIASES: [RegExp, string[]][] = [
  * oczyszczona, alias, bez słowa rodzajowego na początku, bez wszystkich słów rodzajowych.
  */
 export function nameVariants(raw: string): string[] {
+  // Szum z tabel PTTK: punkty doklejone do nazwy, kody grup, przystanki, "TPG".
+  const pre = raw
+    .replace(/\s+\d+(?:\+\d+)?\s*\/\s*[\d?-]+\s*$/, "")
+    .replace(/\b(?:BZ|BW|[SŁŁT])\.?\s?\d{2}\b/gi, " ")
+    .replace(/^(?:z|ze|od|do)\s+/i, "")
+    .replace(/^BZ\s+/i, "")
+    .replace(/\b(?:TPG|PKP|PKS|Razc\.?)\b/g, " ");
+  const compound = pre
+    .split(/\s+[-–/]\s+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (compound.length > 1) {
+    const seen: string[] = [];
+    for (const part of [pre, ...compound]) for (const v of nameVariantsCore(part)) if (!seen.includes(v)) seen.push(v);
+    return seen;
+  }
+  return nameVariantsCore(pre);
+}
+
+function nameVariantsCore(raw: string): string[] {
   const cleaned = raw
     .replace(/\(jeden kierunek\)/gi, " ")
     .replace(/\s+przez\s+.*$/i, "")
@@ -97,11 +117,13 @@ export function nameVariants(raw: string): string[] {
     .replace(/\s+/g, " ")
     .trim();
   const out: string[] = [];
+  const nominative = cleaned.replace(/\bWsi\b/g, "Wieś").replace(/\bwsi\b/g, "wieś");
   const add = (s: string) => {
     const t = s.trim();
     if (t && !out.includes(t)) out.push(t);
   };
   add(cleaned);
+  if (nominative !== cleaned) add(nominative);
 
   const norm = normalizeName(cleaned).replace(/\bprzel\b/g, "przelecz");
   for (const [re, targets] of ALIASES) if (re.test(norm)) targets.forEach(add);

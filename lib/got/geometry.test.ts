@@ -137,3 +137,12 @@ test("warianty nazw: przez, alias, słowa rodzajowe", () => {
   assert.ok(nameVariants("Wielkiej Polany w Dolinie Małej Łąki").includes("Dolina Małej Łąki"));
   assert.ok(nameVariants("Żlebu Kulczyńskiego (jeden kierunek)")[0].startsWith("Żlebu Kulczyńskiego"));
 });
+
+test("nameVariants czyści szum z tabel PTTK i rozbija nazwy złożone", () => {
+  assert.ok(nameVariants("Piekaszowej PKP").includes("Piekaszowej"));
+  assert.ok(nameVariants("TPG Radoszyce").includes("Radoszyce"));
+  assert.ok(nameVariants("Święty Michał (332 m) Ł03").includes("Święty Michał"));
+  assert.ok(nameVariants("Karpacza - Biały Jar").includes("Biały Jar"));
+  assert.ok(nameVariants("z Lipowej - Ostre 12/5").includes("Ostre"));
+  assert.ok(nameVariants("Nowej Wsi").includes("Nowej Wieś"));
+});

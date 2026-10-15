@@ -41,7 +41,8 @@ Wymagany tylko Docker z wtyczką `compose` (działa w Google Cloud Shell).
 
 ```bash
 docker compose up -d --build                    # baza (PostGIS) + aplikacja
-docker compose run --rm tools npm run db:seed   # przykładowe odcinki T.01
+docker compose run --rm tools npm run db:migrate
+docker compose run --rm tools npm run db:import-got   # wszystkie odcinki PTTK (+ przebiegi, gdzie policzone)
 ```
 
 Aplikacja: http://localhost:8080 (w Cloud Shell: *Web Preview* → port 8080).

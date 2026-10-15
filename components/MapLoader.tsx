@@ -5,7 +5,8 @@ import dynamic from "next/dynamic";
 import GpxImport from "@/components/GpxImport";
 import SegmentList from "@/components/SegmentList";
 import { Card } from "@/components/ui";
-import type { Direction, PttkSegment, UserTrailProgress } from "@/types/pttk";
+import type { MapSegment } from "@/components/Map";
+import type { Direction, SegmentRow, UserTrailProgress } from "@/types/pttk";
 
 // MapLibre wymaga `window` — wyłączamy SSR.
 const Map = dynamic(() => import("@/components/Map"), {
@@ -27,33 +28,25 @@ async function getJson<T>(url: string, init?: RequestInit): Promise<T> {
 type Done = { segmentId: string; direction: Direction };
 
 export default function MapLoader() {
-  const [segments, setSegments] = useState<PttkSegment[] | null>(null);
+  const [segments, setSegments] = useState<SegmentRow[] | null>(null);
+  const [track, setTrack] = useState<[number, number][] | null>(null);
+  const [preview, setPreview] = useState<string[]>([]);
   const [done, setDone] = useState<Done[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [groups, setGroups] = useState<{ id: string; segments: number }[]>([]);
-  const [group, setGroup] = useState("T.01");
 
-  // Lista grup i postęp — raz.
+  // Wszystkie odcinki + postęp — raz (bez wyboru grupy).
   useEffect(() => {
     Promise.all([
-      getJson<{ groups: { id: string; segments: number }[] }>("/api/groups"),
+      getJson<{ segments: SegmentRow[] }>("/api/segments"),
       getJson<{ progress: UserTrailProgress[] }>("/api/progress"),
     ])
-      .then(([g, p]) => {
-        setGroups(g.groups);
-        if (g.groups.length && !g.groups.some((x) => x.id === "T.01")) setGroup(g.groups[0].id);
+      .then(([s, p]) => {
+        setSegments(s.segments);
         setDone(p.progress.map((x) => ({ segmentId: x.segmentId, direction: x.direction })));
       })
       .catch((e: Error) => setError(e.message));
   }, []);
-
-  // Odcinki wybranej grupy.
-  useEffect(() => {
-    getJson<{ segments: PttkSegment[] }>(`/api/segments?group=${encodeURIComponent(group)}`)
-      .then((s) => setSegments(s.segments))
-      .catch((e: Error) => setError(e.message));
-  }, [group]);
 
   const completedIds = useMemo(() => new Set(done.map((d) => d.segmentId)), [done]);
 
@@ -85,6 +78,13 @@ export default function MapLoader() {
     return { points, km: Math.round(km * 10) / 10 };
   }, [segments, done, completedIds]);
 
+  // Tylko odcinki z przebiegiem trafiają na mapę i do automatycznego wykrywania.
+  const mapped = useMemo(
+    () => (segments ?? []).filter((s): s is MapSegment => s.geometry !== null),
+    [segments],
+  );
+  const highlight = useMemo(() => new Set(preview), [preview]);
+
   return (
     <div className="flex h-dvh flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 bg-white px-5 py-3 dark:border-zinc-800 dark:bg-zinc-900">
@@ -94,25 +94,8 @@ export default function MapLoader() {
           </span>
           <div>
             <h1 className="text-lg leading-tight font-bold">GOT PTTK Tracker</h1>
-            <p className="text-xs text-zinc-500">Grupa {group}</p>
+            <p className="text-xs text-zinc-500">Wszystkie trasy punktowane PTTK · wykrywanie automatyczne</p>
           </div>
-          {groups.length > 1 && (
-            <select
-              value={group}
-              onChange={(e) => {
-                setSelectedId(null);
-                setGroup(e.target.value);
-              }}
-              className="ml-2 rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-              aria-label="Grupa GOT"
-            >
-              {groups.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.id} ({g.segments})
-                </option>
-              ))}
-            </select>
-          )}
         </div>
         {stats && segments && (
           <dl className="flex gap-2 text-center">
@@ -127,7 +110,8 @@ export default function MapLoader() {
         <div className="m-5 rounded-2xl bg-red-50 p-5 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">
           <p className="font-semibold">Błąd: {error}</p>
           <p className="mt-1 text-xs opacity-80">
-            Sprawdź, czy baza działa i ma dane: <code>docker compose run --rm tools npm run db:seed</code>
+            Sprawdź, czy baza działa i ma dane: <code>docker compose run --rm tools npm run db:migrate</code> i{" "}
+            <code>npm run db:import-got</code>
           </p>
         </div>
       ) : !segments ? (
@@ -135,7 +119,14 @@ export default function MapLoader() {
       ) : (
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 md:flex-row md:overflow-hidden">
           <main className="relative order-1 h-[55vh] shrink-0 overflow-hidden rounded-2xl border border-zinc-200 shadow-sm md:order-2 md:h-auto md:min-w-0 md:flex-1 dark:border-zinc-800">
-            <Map segments={segments} completedIds={completedIds} selectedId={selectedId} />
+            <Map
+              segments={mapped}
+              completedIds={completedIds}
+              selectedId={selectedId}
+              highlightIds={highlight}
+              track={track}
+              onSelect={setSelectedId}
+            />
             <Legend />
           </main>
           <aside className="order-2 flex shrink-0 flex-col gap-4 md:order-1 md:w-96 md:overflow-y-auto md:pr-1">
@@ -144,7 +135,7 @@ export default function MapLoader() {
                 <div className="mb-2 flex items-baseline justify-between text-sm">
                   <span>
                     <strong className="text-2xl">{completedIds.size}</strong>
-                    <span className="text-zinc-500"> / {segments.length} odcinków</span>
+                    <span className="text-zinc-500"> / {segments.length} odcinków (na mapie: {mapped.length})</span>
                   </span>
                   <span className="font-semibold text-green-700 dark:text-green-400">
                     {stats.points} pkt
@@ -160,7 +151,13 @@ export default function MapLoader() {
                 </div>
               </Card>
             )}
-            <GpxImport segments={segments} completedIds={completedIds} onConfirm={confirm} />
+            <GpxImport
+              segments={mapped}
+              completedIds={completedIds}
+              onConfirm={confirm}
+              onTrack={setTrack}
+              onPreview={setPreview}
+            />
             <SegmentList
               segments={segments}
               completedIds={completedIds}
@@ -187,13 +184,16 @@ function Legend() {
   return (
     <div className="pointer-events-none absolute bottom-4 left-4 flex flex-col gap-1.5 rounded-xl bg-white/90 px-3 py-2 text-xs shadow-md backdrop-blur dark:bg-zinc-900/90">
       <span className="flex items-center gap-2">
-        <span className="h-1.5 w-6 rounded-full bg-green-600" /> zaliczony
+        <span className="h-1.5 w-6 rounded-full bg-green-500/60" /> zaliczony (zielona poświata)
       </span>
       <span className="flex items-center gap-2">
-        <span className="h-1.5 w-6 rounded-full bg-zinc-500/60" /> do zrobienia
+        <span className="h-1.5 w-6 rounded-full bg-gradient-to-r from-red-600 via-blue-600 to-green-600" /> kolor znakowania szlaku
       </span>
       <span className="flex items-center gap-2">
-        <span className="h-1.5 w-6 rounded-full bg-amber-500" /> wybrany
+        <span className="h-1.5 w-6 rounded-full bg-amber-500" /> wykryty / wybrany
+      </span>
+      <span className="flex items-center gap-2">
+        <span className="h-1.5 w-6 rounded-full bg-sky-500" /> Twój ślad GPX
       </span>
     </div>
   );

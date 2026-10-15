@@ -86,3 +86,19 @@ export interface RawPttkRecord {
   groupId: string;
   raw: string; // "Kuźnice – Przełęcz między Kopami przez Boczań | 7 pkt / 4 pkt"
 }
+
+/** Odcinek z listy (API): przebieg na mapie może nie być jeszcze wyznaczony. */
+export interface SegmentRow extends Omit<PttkSegment, "geometry" | "trailColor"> {
+  geometry: LineString | null;
+  trailColor: TrailColor | null;
+  regionName: string;
+  /** "ok" | "detour" | "origin-not-found" | ... — status dopasowania do OSM. */
+  geomStatus: string;
+  unmarked: boolean;
+}
+
+/** Minimalny zestaw pól potrzebny do dopasowania śladu. */
+export type MatchableSegment = Pick<
+  PttkSegment,
+  "id" | "geometry" | "gotPointsForward" | "gotPointsBackward"
+>;

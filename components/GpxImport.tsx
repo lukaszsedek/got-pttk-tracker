@@ -4,10 +4,15 @@ import { useState } from "react";
 import { Card } from "@/components/ui";
 import { parseGpx } from "@/lib/gpx/parse-gpx";
 import { matchActivity } from "@/lib/gpx/map-match";
-import type { Direction, MatchSummary, PttkSegment } from "@/types/pttk";
+import type { Direction, MatchableSegment, MatchSummary } from "@/types/pttk";
 
 interface Props {
-  segments: PttkSegment[];
+  /** Odcinki z wyznaczonym przebiegiem — wykrywanie jest automatyczne, bez wyboru grupy. */
+  segments: (MatchableSegment & { name: string })[];
+  /** Rysuje przebieg aktywności na mapie. */
+  onTrack?: (coords: [number, number][] | null) => void;
+  /** Odcinki wykryte w bieżącym podglądzie (do podświetlenia na mapie). */
+  onPreview?: (segmentIds: string[]) => void;
   completedIds: ReadonlySet<string>;
   onConfirm: (
     completions: { segmentId: string; direction: Direction }[],
@@ -17,7 +22,7 @@ interface Props {
 
 const DIR_LABEL = { forward: "tam →", backward: "← z powrotem" } as const;
 
-export default function GpxImport({ segments, completedIds, onConfirm }: Props) {
+export default function GpxImport({ segments, completedIds, onConfirm, onTrack, onPreview }: Props) {
   const [summary, setSummary] = useState<MatchSummary | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -28,11 +33,16 @@ export default function GpxImport({ segments, completedIds, onConfirm }: Props) 
     setError(null);
     setSummary(null);
     setAccepted(new Set());
+    onTrack?.(null);
+    onPreview?.([]);
     if (!file) return;
     setFileName(file.name);
     try {
       const activity = parseGpx(await file.text(), file.name);
-      setSummary(matchActivity(activity, segments, completedIds));
+      onTrack?.(activity.points.map((p) => [p.lng, p.lat] as [number, number]));
+      const result = matchActivity(activity, segments, completedIds);
+      setSummary(result);
+      onPreview?.([...new Set(result.matches.map((m) => m.segmentId))]);
     } catch (e) {
       setError((e as Error).message);
     }
@@ -93,11 +103,15 @@ export default function GpxImport({ segments, completedIds, onConfirm }: Props) 
           <p className="font-medium">Nie wykryto żadnych odcinków PTTK.</p>
           {summary.diagnostics && (
             <p className="mt-1 text-xs opacity-80">
-              Ślad: {summary.diagnostics.trackPoints} pkt, {summary.diagnostics.trackLengthKm} km.
-              Pokrycie (wymagane ≥ 85%):{" "}
+              Ślad ({summary.diagnostics.trackPoints} pkt, {summary.diagnostics.trackLengthKm} km) jest
+              widoczny na mapie. W okolicy śladu mamy {summary.diagnostics.coverage.length} odcinków z
+              przebiegiem; najlepsze pokrycie:{" "}
               {summary.diagnostics.coverage
+                .slice(0, 3)
                 .map((c) => `${names.get(c.segmentId) ?? c.segmentId} ${Math.round(c.coverage * 100)}%`)
-                .join("; ")}
+                .join("; ") || "brak"}
+              . Jeśli to teren, dla którego przebiegi jeszcze nie zostały wyznaczone, odcinków nie ma
+              jeszcze na mapie.
             </p>
           )}
         </div>
@@ -174,6 +188,7 @@ export default function GpxImport({ segments, completedIds, onConfirm }: Props) 
                 );
                 setSummary(null);
                 setFileName(null);
+                onPreview?.([]);
               }}
             >
               Zatwierdź i dodaj do książeczki

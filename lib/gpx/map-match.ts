@@ -1,8 +1,8 @@
 import type {
   Direction,
   GpxActivity,
+  MatchableSegment,
   MatchSummary,
-  PttkSegment,
   SegmentMatch,
 } from "@/types/pttk";
 import { denoise, simplifyTrack, type CleanOptions } from "./clean";
@@ -67,7 +67,7 @@ function splitTraversals(alongs: number[], turnM = 30, startM = 15): Traversal[]
  */
 export function matchActivity(
   activity: GpxActivity,
-  segments: PttkSegment[],
+  segments: MatchableSegment[],
   completedIds: ReadonlySet<string>,
   { bufferM = 25, minCoverage = 0.85, partialCoverage = 0.5, ...clean }: MatchOptions = {},
 ): MatchSummary {
@@ -85,7 +85,23 @@ export function matchActivity(
   const trackXY: XY[] = track.map((p) => proj(p.lat, p.lng));
   const trackLine = new Polyline(trackXY);
 
+  // Wstępny filtr: odcinki, których ramka nie dotyka ramki śladu (z zapasem na bufor).
+  const pad = 0.0015; // ~150 m
+  let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+  for (const p of track) {
+    minLat = Math.min(minLat, p.lat); maxLat = Math.max(maxLat, p.lat);
+    minLng = Math.min(minLng, p.lng); maxLng = Math.max(maxLng, p.lng);
+  }
+
   for (const seg of segments) {
+    let sMinLat = Infinity, sMaxLat = -Infinity, sMinLng = Infinity, sMaxLng = -Infinity;
+    for (const [lng, lat] of seg.geometry.coordinates) {
+      sMinLat = Math.min(sMinLat, lat); sMaxLat = Math.max(sMaxLat, lat);
+      sMinLng = Math.min(sMinLng, lng); sMaxLng = Math.max(sMaxLng, lng);
+    }
+    if (sMaxLat < minLat - pad || sMinLat > maxLat + pad || sMaxLng < minLng - pad || sMinLng > maxLng + pad) {
+      continue;
+    }
     const line = new Polyline(
       seg.geometry.coordinates.map(([lng, lat]) => proj(lat, lng)),
     );
